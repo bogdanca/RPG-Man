@@ -1879,12 +1879,19 @@ class GameUI {
                 // Clear all localStorage
                 localStorage.clear();
                 
+                // Reset debug mode flag
+                this.debugMode = false;
+                
+                // Close debug menu
+                debugMenu.classList.add('hidden');
+                this.game.paused = false;
+                
                 // Show notification before reload
                 this.showNotification('Game Reset! Reloading...', 'damage');
                 
-                // Reload page after short delay
+                // Force a hard reload to ensure clean state
                 setTimeout(() => {
-                    window.location.reload();
+                    window.location.reload(true);
                 }, 1000);
             }
         });

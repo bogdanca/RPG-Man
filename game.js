@@ -705,6 +705,12 @@ class Game {
 
         // Cap delta time to prevent huge jumps
         if (this.deltaTime > 100) this.deltaTime = 100;
+        
+        // Apply game speed multiplier based on player speed stat
+        // Base speed is 4.0, scale game speed proportionally
+        const baseSpeed = 4.0;
+        const speedMultiplier = this.player.stats.speed / baseSpeed;
+        this.deltaTime *= speedMultiplier;
 
         this.update();
         this.draw();
