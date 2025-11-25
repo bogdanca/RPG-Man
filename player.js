@@ -1,0 +1,1053 @@
+// Player Class
+
+class Player {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.width = PLAYER_CONFIG.width;
+        this.height = PLAYER_CONFIG.height;
+        
+        // Physics
+        this.vx = 0;
+        this.vy = 0;
+        this.onGround = false;
+        this.canDoubleJump = true;
+        
+        // Stats
+        this.level = 1;
+        this.xp = 0;
+        this.coins = 0;
+        this.materials = 0;
+        
+        this.stats = { ...PLAYER_CONFIG.baseStats };
+        this.hp = this.stats.maxHp;
+        
+        this.statUpgrades = {
+            maxHp: 0,
+            damage: 0,
+            defense: 0,
+            speed: 0,
+            critChance: 0
+        };
+        
+        this.gear = {
+            weapon: 0,
+            armor: 0,
+            trinket: 0,
+            boots: 0
+        };
+        
+        // Track highest crafted tier (for blacksmith progression)
+        this.craftedGear = {
+            weapon: 0,
+            armor: 0,
+            trinket: 0,
+            boots: 0
+        };
+        
+        // Combat
+        this.isAttacking = false;
+        this.attackTime = 0;
+        this.attackDirection = 1;
+        this.invulnerable = false;
+        
+        // Level up animation
+        this.isLevelingUp = false;
+        this.levelUpProgress = 0;
+        this.levelUpDuration = 2000;
+        
+        // Jump grace period (coyote time)
+        this.jumpGraceTime = 0;
+        
+        // Potions and buffs
+        this.potions = {
+            health_potion: 0,
+            elixir_strength: 0,
+            elixir_defense: 0,
+            elixir_speed: 0
+        };
+        this.activeBuffs = [];
+        this.jumpBufferTime = 0;
+        this.invulnerableTime = 0;
+        this.isBlocking = false;
+        this.blockReduction = 0; // 100% damage reduction when blocking
+        
+        // Animation
+        this.direction = 1; // 1 = right, -1 = left
+        this.animTime = 0;
+        
+        // Quests
+        this.questProgress = {};
+        QUESTS.forEach(quest => {
+            this.questProgress[quest.id] = { completed: false, progress: 0 };
+        });
+    }
+    
+    update(keys, platforms, enemies, deltaTime, mouseX, mouseY) {
+        // Store mouse position for attack direction
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
+        
+        // Update direction based on mouse position
+        if (mouseX !== undefined) {
+            const playerCenterX = this.x + this.width / 2;
+            if (mouseX < playerCenterX) {
+                this.direction = -1;
+            } else if (mouseX > playerCenterX) {
+                this.direction = 1;
+            }
+        }
+        
+        // Blocking (mouse right click) - check early to apply movement penalty
+        this.isBlocking = keys.mouseBlock || false;
+        
+        // Movement
+        let moveSpeed = this.stats.speed;
+        
+        // Reduce movement speed by 50% when blocking
+        if (this.isBlocking) {
+            moveSpeed *= 0.5;
+        }
+        
+        if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+            this.vx = -moveSpeed;
+        } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+            this.vx = moveSpeed;
+        } else {
+            this.vx *= GAME_CONFIG.friction;
+        }
+        
+        // Update jump timers
+        if (this.jumpGraceTime > 0) this.jumpGraceTime -= deltaTime;
+        if (this.jumpBufferTime > 0) this.jumpBufferTime -= deltaTime;
+        
+        // Jumping with improved mechanics
+        const jumpKeyPressed = keys['ArrowUp'] || keys['w'] || keys['W'] || keys[' '];
+        
+        // Grace period when leaving ground (coyote time)
+        if (this.onGround) {
+            this.jumpGraceTime = 150; // 150ms grace period after leaving ground
+            this.canDoubleJump = true; // Reset double jump when on ground
+        }
+        
+        // Detect new jump press (key wasn't pressed last frame, is pressed now)
+        const jumpJustPressed = jumpKeyPressed && !keys.jumpWasPressed;
+        
+        // Buffer jump input (can press jump slightly before landing)
+        if (jumpJustPressed) {
+            this.jumpBufferTime = 150; // 150ms buffer window
+        }
+        
+        // Can't jump while blocking
+        if (!this.isBlocking) {
+            // First jump (with grace period and buffer)
+            if ((this.onGround || this.jumpGraceTime > 0) && this.jumpBufferTime > 0) {
+                this.vy = -PLAYER_CONFIG.jumpPower;
+                this.onGround = false;
+                this.jumpGraceTime = 0;
+                this.jumpBufferTime = 0;
+            }
+            // Double jump (when key is pressed again while in air)
+            else if (jumpJustPressed && this.canDoubleJump && !this.onGround && this.jumpGraceTime <= 0) {
+                this.vy = -PLAYER_CONFIG.doubleJumpPower;
+                this.canDoubleJump = false;
+            }
+        }
+        
+        // Store previous key state for next frame
+        keys.jumpWasPressed = jumpKeyPressed;
+        
+        // Gravity
+        this.vy += GAME_CONFIG.gravity;
+        
+        // Apply velocity
+        this.x += this.vx;
+        this.y += this.vy;
+        
+        // Screen bounds
+        if (this.x < 0) this.x = 0;
+        if (this.x + this.width > GAME_CONFIG.width) this.x = GAME_CONFIG.width - this.width;
+        
+        // Platform collision
+        this.onGround = false;
+        
+        // Drop through platform when pressing S (only on platforms, not ground)
+        const pressingDown = keys['s'] || keys['S'] || keys['ArrowDown'];
+        let shouldDropThrough = false;
+        
+        for (let platform of platforms) {
+            if (this.vy >= 0 && checkCollision(this, platform)) {
+                // Check if player is coming from above the platform
+                const playerBottom = this.y + this.height;
+                const playerBottomPrev = playerBottom - this.vy;
+                
+                if (playerBottomPrev <= platform.y + 5) {
+                    // Check if this is the ground platform (y >= 500) or a regular platform
+                    const isGroundPlatform = platform.y >= 500;
+                    
+                    // Allow drop-through if pressing down and not on ground platform
+                    if (pressingDown && !isGroundPlatform) {
+                        shouldDropThrough = true;
+                        continue; // Skip this platform
+                    }
+                    
+                    this.y = platform.y - this.height;
+                    this.vy = 0;
+                    this.onGround = true;
+                    this.canDoubleJump = true;
+                }
+            }
+        }
+        
+        // Attack (mouse only) - can't attack while blocking
+        this.attackTime -= deltaTime;
+        if (keys.mouseAttack && this.attackTime <= 0 && !this.isAttacking && !this.isBlocking) {
+            this.attack(enemies);
+            keys.mouseAttack = false;
+        }
+        
+        if (this.isAttacking) {
+            if (this.attackTime <= PLAYER_CONFIG.attackCooldown - 100) {
+                this.isAttacking = false;
+            }
+        }
+        
+        // Invulnerability
+        if (this.invulnerable) {
+            this.invulnerableTime -= deltaTime;
+            if (this.invulnerableTime <= 0) {
+                this.invulnerable = false;
+            }
+        }
+        
+        // Update active buffs
+        this.updateBuffs(deltaTime);
+        
+        // Animation
+        this.animTime += deltaTime;
+        
+        // Update level up animation
+        if (this.isLevelingUp) {
+            const elapsed = Date.now() - this.levelUpStartTime;
+            this.levelUpProgress = Math.min(1, elapsed / this.levelUpDuration);
+            
+            if (elapsed >= this.levelUpDuration) {
+                this.isLevelingUp = false;
+                this.levelUpProgress = 0;
+            }
+        }
+    }
+    
+    attack(enemies) {
+        this.isAttacking = true;
+        this.attackTime = PLAYER_CONFIG.attackCooldown;
+        
+        // Play sword swing sound
+        if (window.soundManager) {
+            window.soundManager.play('swordSwing');
+        }
+        
+        // Determine attack direction from mouse position
+        if (this.mouseX !== undefined) {
+            const playerCenterX = this.x + this.width / 2;
+            this.attackDirection = this.mouseX >= playerCenterX ? 1 : -1;
+        } else {
+            this.attackDirection = this.direction;
+        }
+        
+        let attackX = this.x + (this.attackDirection > 0 ? this.width : -PLAYER_CONFIG.attackRange);
+        
+        // Extended hitbox with more vertical range (up and down)
+        const verticalExtension = 15; // Extra pixels up and down
+        let attackBox = {
+            x: attackX,
+            y: this.y - verticalExtension,
+            width: PLAYER_CONFIG.attackRange,
+            height: this.height + (verticalExtension * 2)
+        };
+        
+        for (let enemy of enemies) {
+            if (enemy.alive && checkCollision(attackBox, enemy)) {
+                let damage = this.stats.damage;
+                let isCrit = Math.random() < this.stats.critChance;
+                if (isCrit) {
+                    damage *= 2;
+                }
+                enemy.takeDamage(damage, isCrit);
+            }
+        }
+    }
+    
+    takeDamage(amount) {
+        if (this.invulnerable) return;
+        
+        let actualDamage = Math.max(1, amount - this.stats.defense);
+        
+        // Apply blocking - 100% damage reduction
+        if (this.isBlocking) {
+            actualDamage = 0;
+            
+            // Show blocked indicator
+            if (window.gameUI) {
+                window.gameUI.showNotification('🛡️ Blocked!', 'item');
+                window.gameUI.showDamage(this.x + this.width / 2, this.y, 'BLOCKED!', false, '#3498db');
+            }
+            
+            // Don't set invulnerability or take damage when blocking
+            return;
+        }
+        
+        this.hp -= actualDamage;
+        this.invulnerable = true;
+        this.invulnerableTime = 1000;
+        
+        // Play damage sound
+        if (window.soundManager) {
+            window.soundManager.play('playerDamage');
+        }
+        
+        // Show damage
+        if (window.gameUI) {
+            window.gameUI.showDamage(this.x + this.width / 2, this.y, actualDamage, false);
+        }
+        
+        if (this.hp <= 0) {
+            this.die();
+        }
+    }
+    
+    die() {
+        this.hp = 0;
+        
+        // Show death screen
+        if (window.gameUI) {
+            window.gameUI.showDeathScreen();
+        }
+    }
+    
+    respawnFromDeath() {
+        this.hp = this.stats.maxHp;
+        this.x = 100;
+        this.y = 400;
+        this.vx = 0;
+        this.vy = 0;
+        
+        // Lose 20% of current XP
+        let lostXP = Math.floor(this.xp * 0.2);
+        this.xp -= lostXP;
+        if (this.xp < 0) this.xp = 0;
+        
+        // Lose 20% of current coins
+        let lostCoins = Math.floor(this.coins * 0.2);
+        this.coins -= lostCoins;
+        if (this.coins < 0) this.coins = 0;
+        
+        if (window.gameUI) {
+            window.gameUI.hideDeathScreen();
+            let losses = [];
+            if (lostXP > 0) losses.push(`${lostXP} XP`);
+            if (lostCoins > 0) losses.push(`${lostCoins} coins`);
+            if (losses.length > 0) {
+                window.gameUI.showNotification(`Lost ${losses.join(' and ')}`, 'damage');
+            }
+        }
+    }
+    
+    gainXP(amount) {
+        this.xp += amount;
+        
+        // Show XP pop-up (WoW style)
+        if (window.gameUI) {
+            window.gameUI.showXPGain(this.x + this.width / 2, this.y, amount);
+        }
+        
+        let requiredXP = XP_FORMULA(this.level);
+        if (this.xp >= requiredXP) {
+            this.levelUp();
+        }
+    }
+    
+    levelUp() {
+        this.xp -= XP_FORMULA(this.level);
+        this.level++;
+        
+        // Stat boost on level up
+        this.stats.maxHp += 5;
+        this.hp = this.stats.maxHp;
+        this.stats.damage += 1;
+        this.stats.defense += 1;
+        
+        // Start level up animation
+        this.isLevelingUp = true;
+        this.levelUpProgress = 0;
+        this.levelUpStartTime = Date.now();
+        
+        // Play level up sound
+        if (window.soundManager) {
+            window.soundManager.play('levelUp');
+        }
+        
+        if (window.gameUI) {
+            window.gameUI.showNotification(`🎉 Level Up! Now Level ${this.level}`, 'level-up');
+        }
+        
+        // Check for more level ups
+        if (this.xp >= XP_FORMULA(this.level)) {
+            this.levelUp();
+        }
+    }
+    
+    gainCoins(amount) {
+        this.coins += amount;
+    }
+    
+    gainMaterials(amount) {
+        this.materials += amount;
+        if (window.gameUI) {
+            window.gameUI.showNotification(`+${amount} Material`, 'item');
+        }
+    }
+    
+    updateQuests(enemyType) {
+        QUESTS.forEach(quest => {
+            if (!this.questProgress[quest.id].completed &&
+                quest.target.enemy === enemyType) {
+                this.questProgress[quest.id].progress++;
+                
+                if (this.questProgress[quest.id].progress >= quest.target.count) {
+                    this.completeQuest(quest);
+                }
+            }
+        });
+    }
+    
+    completeQuest(quest) {
+        this.questProgress[quest.id].completed = true;
+        this.gainXP(quest.reward.xp);
+        this.gainCoins(quest.reward.coins);
+        
+        if (window.gameUI) {
+            window.gameUI.showNotification(`✅ Quest Complete: ${quest.name}`, 'level-up');
+        }
+    }
+    
+    recalculateStats() {
+        // Start with base stats
+        this.stats.maxHp = PLAYER_CONFIG.baseStats.maxHp;
+        this.stats.damage = PLAYER_CONFIG.baseStats.damage;
+        this.stats.defense = PLAYER_CONFIG.baseStats.defense;
+        this.stats.speed = PLAYER_CONFIG.baseStats.speed;
+        this.stats.critChance = PLAYER_CONFIG.baseStats.critChance;
+        
+        // Add stat upgrades
+        this.stats.maxHp += this.statUpgrades.maxHp * STAT_UPGRADES.maxHp.increment;
+        this.stats.damage += this.statUpgrades.damage * STAT_UPGRADES.damage.increment;
+        this.stats.defense += this.statUpgrades.defense * STAT_UPGRADES.defense.increment;
+        this.stats.speed += this.statUpgrades.speed * STAT_UPGRADES.speed.increment;
+        this.stats.critChance += this.statUpgrades.critChance * STAT_UPGRADES.critChance.increment;
+        
+        // Add gear bonuses (all stats from equipment including boots defense)
+        for (let slot in this.gear) {
+            let gearLevel = this.gear[slot];
+            let gearData = GEAR_SLOTS[slot].levels[gearLevel];
+            
+            if (gearData.damage) this.stats.damage += gearData.damage;
+            if (gearData.defense) this.stats.defense += gearData.defense;
+            if (gearData.hp) this.stats.maxHp += gearData.hp;
+            if (gearData.speed) this.stats.speed += gearData.speed;
+            if (gearData.critChance) this.stats.critChance += gearData.critChance;
+        }
+        
+        // Add active buff bonuses
+        for (let buff of this.activeBuffs) {
+            if (buff.stat === 'damage') this.stats.damage += buff.value;
+            if (buff.stat === 'defense') this.stats.defense += buff.value;
+            if (buff.stat === 'speed') this.stats.speed += buff.value;
+        }
+        
+        // Restore HP to new max if needed
+        if (this.hp > this.stats.maxHp) {
+            this.hp = this.stats.maxHp;
+        }
+    }
+    
+    draw(ctx) {
+        ctx.save();
+        
+        // Invulnerability flash
+        if (this.invulnerable && Math.floor(this.animTime / 100) % 2 === 0) {
+            ctx.globalAlpha = 0.5;
+        }
+        
+        // Center point for drawing
+        const centerX = this.x + this.width / 2;
+        const centerY = this.y + this.height / 2;
+        
+        // Flip for direction (use attack direction when attacking, otherwise player direction)
+        const drawDirection = this.isAttacking ? this.attackDirection : this.direction;
+        if (drawDirection < 0) {
+            ctx.translate(centerX, 0);
+            ctx.scale(-1, 1);
+            ctx.translate(-centerX, 0);
+        }
+        
+        // Calculate sword swing angle based on attack progress
+        let swordAngle = 0;
+        if (this.isAttacking) {
+            const attackProgress = 1 - (this.attackTime / PLAYER_CONFIG.attackCooldown);
+            swordAngle = Math.sin(attackProgress * Math.PI) * -120; // Swing arc
+        }
+        
+        // Draw sword (behind player if not attacking, in front when attacking)
+        if (!this.isAttacking || swordAngle < -60) {
+            this.drawSword(ctx, swordAngle, drawDirection);
+        }
+        
+        // Draw shield when blocking (behind player)
+        if (this.isBlocking) {
+            this.drawShield(ctx);
+        }
+        
+        // Draw pixel art character body
+        this.drawPixelBody(ctx);
+        
+        // Draw sword in front when mid-swing
+        if (this.isAttacking && swordAngle >= -60) {
+            this.drawSword(ctx, swordAngle, drawDirection);
+        }
+        
+        // Draw shield on back when armor is equipped (level 1+)
+        if (this.gear.armor > 0 && !this.isBlocking) {
+            this.drawShieldOnBack(ctx);
+        }
+        
+        ctx.restore();
+        
+        // Draw level up animation
+        if (this.isLevelingUp) {
+            this.drawLevelUpAnimation(ctx);
+        }
+    }
+    
+    drawLevelUpAnimation(ctx) {
+        const centerX = this.x + this.width / 2;
+        const centerY = this.y + this.height / 2;
+        const progress = this.levelUpProgress;
+        const time = Date.now() / 50;
+        
+        ctx.save();
+        
+        // WoW-style light beams shooting up
+        const beamCount = 8;
+        for (let i = 0; i < beamCount; i++) {
+            const angle = (i / beamCount) * Math.PI * 2 + time * 0.05;
+            const distance = 20 + progress * 15;
+            const x = centerX + Math.cos(angle) * distance;
+            const beamHeight = 80 * (1 - progress);
+            const width = 6 - progress * 3;
+            
+            // Beam gradient
+            const alpha = (1 - progress) * 0.8;
+            ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
+            ctx.fillRect(x - width / 2, this.y - beamHeight, width, beamHeight);
+            
+            // Beam top glow
+            ctx.fillStyle = `rgba(255, 255, 200, ${alpha})`;
+            ctx.fillRect(x - width / 2, this.y - beamHeight, width, 8);
+        }
+        
+        // Central pillar of light
+        const pillarAlpha = (1 - progress) * 0.6;
+        ctx.fillStyle = `rgba(255, 255, 255, ${pillarAlpha})`;
+        ctx.fillRect(centerX - 4, this.y - 100 * (1 - progress), 8, 100 * (1 - progress));
+        
+        ctx.fillStyle = `rgba(255, 215, 0, ${pillarAlpha})`;
+        ctx.fillRect(centerX - 6, this.y - 100 * (1 - progress), 12, 100 * (1 - progress));
+        
+        // Ground circle expanding (yellow/gold)
+        ctx.strokeStyle = `rgba(255, 215, 0, ${1 - progress})`;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(centerX, this.y + this.height, 40 * progress, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Inner circle
+        ctx.strokeStyle = `rgba(255, 255, 200, ${0.8 - progress * 0.5})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(centerX, this.y + this.height, 25 * progress, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Particle bursts
+        const particleCount = 16;
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (i / particleCount) * Math.PI * 2;
+            const burstProgress = Math.min(1, progress * 2);
+            const distance = burstProgress * 50;
+            const x = centerX + Math.cos(angle) * distance;
+            const y = centerY + Math.sin(angle) * distance;
+            const size = 4 * (1 - burstProgress);
+            
+            if (size > 0) {
+                ctx.fillStyle = `rgba(255, 215, 0, ${1 - burstProgress})`;
+                ctx.fillRect(x - size / 2, y - size / 2, size, size);
+                
+                // Sparkle
+                ctx.fillStyle = `rgba(255, 255, 255, ${(1 - burstProgress) * 0.8})`;
+                ctx.fillRect(x - size / 4, y - size / 4, size / 2, size / 2);
+            }
+        }
+        
+        // Player glow
+        ctx.fillStyle = `rgba(255, 215, 0, ${(1 - progress) * 0.4})`;
+        ctx.fillRect(this.x - 15, this.y - 15, this.width + 30, this.height + 30);
+        
+        // Spinning stars around player
+        for (let i = 0; i < 5; i++) {
+            const starAngle = time * 0.1 + (i / 5) * Math.PI * 2;
+            const starRadius = 30;
+            const starX = centerX + Math.cos(starAngle) * starRadius;
+            const starY = centerY + Math.sin(starAngle) * starRadius;
+            const starAlpha = (1 - progress) * 0.9;
+            
+            // Star shape (pixel art)
+            ctx.fillStyle = `rgba(255, 255, 0, ${starAlpha})`;
+            ctx.fillRect(starX - 1, starY - 3, 2, 6); // Vertical
+            ctx.fillRect(starX - 3, starY - 1, 6, 2); // Horizontal
+            ctx.fillRect(starX - 2, starY - 2, 4, 4); // Center
+        }
+        
+        // "LEVEL UP!" text
+        if (progress < 0.7) {
+            const textAlpha = progress < 0.3 ? progress / 0.3 : 1 - ((progress - 0.3) / 0.4);
+            ctx.fillStyle = `rgba(255, 215, 0, ${textAlpha})`;
+            ctx.strokeStyle = `rgba(139, 69, 19, ${textAlpha})`;
+            ctx.font = 'bold 20px monospace';
+            ctx.lineWidth = 3;
+            ctx.textAlign = 'center';
+            const textY = this.y - 40 - progress * 20;
+            ctx.strokeText('LEVEL UP!', centerX, textY);
+            ctx.fillText('LEVEL UP!', centerX, textY);
+        }
+        
+        ctx.restore();
+    }
+    
+    drawPixelBody(ctx) {
+        const x = this.x;
+        const y = this.y;
+        const pixelSize = 3; // 3x3 pixel blocks for better proportions (6x11 grid = 18x33px, centered in 24x32 box)
+        const offsetX = 3; // Center horizontally in 24px width
+        
+        // Calculate animation offsets
+        const isMoving = Math.abs(this.vx) > 0.5;
+        const walkCycle = Math.floor(this.animTime / 150) % 4; // 4 frame walk cycle
+        const bobOffset = isMoving ? Math.sin(this.animTime / 100) * 1 : 0;
+        
+        // Blocking lean
+        const blockLean = this.isBlocking ? -2 : 0;
+        
+        // Attack recoil
+        const attackRecoil = this.isAttacking ? Math.sin((1 - this.attackTime / PLAYER_CONFIG.attackCooldown) * Math.PI) * 2 : 0;
+        
+        // Helper function to draw pixel blocks
+        const pixel = (offsetXPos, offsetYPos, color) => {
+            ctx.fillStyle = color;
+            ctx.fillRect(
+                x + offsetX + offsetXPos * pixelSize + blockLean + attackRecoil, 
+                y + offsetYPos * pixelSize + bobOffset, 
+                pixelSize, 
+                pixelSize
+            );
+        };
+        
+        // Character colors
+        const headColor = '#f0c090'; // Skin tone
+        const hairColor = '#8B4513'; // Brown hair
+        const eyeColor = '#000000';
+        const armorColor = '#5A6B7C'; // Steel blue armor
+        const armorHighlight = '#7A8B9C';
+        const armColor = '#f0c090';
+        const pantsColor = '#4A4A4A';
+        const bootColor = '#2C1810';
+        const beltColor = '#8B4513';
+        
+        // Hair (top 2 rows)
+        for (let i = 1; i < 5; i++) {
+            pixel(i, 0, hairColor);
+            pixel(i, 1, hairColor);
+        }
+        
+        // Face (rows 2-3)
+        for (let i = 1; i < 5; i++) {
+            pixel(i, 2, headColor);
+            pixel(i, 3, headColor);
+        }
+        
+        // Eyes (blink during attack)
+        if (!this.isAttacking || this.attackTime > PLAYER_CONFIG.attackCooldown - 50) {
+            pixel(1, 2, eyeColor);
+            pixel(4, 2, eyeColor);
+        }
+        
+        // Torso with armor (rows 4-6)
+        for (let i = 1; i < 5; i++) {
+            pixel(i, 4, armorColor);
+            pixel(i, 5, armorColor);
+            pixel(i, 6, armorColor);
+        }
+        // Armor highlights
+        pixel(2, 4, armorHighlight);
+        pixel(3, 4, armorHighlight);
+        
+        // Arms (animated for attacking)
+        const armOffset = this.isAttacking ? 1 : 0;
+        
+        // Left arm (shield arm)
+        pixel(0, 4, armColor);
+        pixel(0, 5, armColor);
+        pixel(0, 6, armColor);
+        
+        // Right arm (sword arm) - extends during attack
+        pixel(5, 4 + armOffset, armColor);
+        pixel(5, 5 + armOffset, armColor);
+        pixel(5, 6 + armOffset, armColor);
+        
+        // Belt (row 6)
+        for (let i = 1; i < 5; i++) {
+            pixel(i, 6, beltColor);
+        }
+        pixel(2, 6, '#FFD700'); // Gold buckle
+        pixel(3, 6, '#FFD700');
+        
+        // Legs with walking animation (rows 7-9)
+        let leftLegOffset = 0;
+        let rightLegOffset = 0;
+        
+        if (isMoving) {
+            // Alternate leg positions
+            if (walkCycle === 0 || walkCycle === 2) {
+                rightLegOffset = 1;
+            } else {
+                leftLegOffset = 1;
+            }
+        }
+        
+        // Left leg
+        pixel(1, 7 + leftLegOffset, pantsColor);
+        pixel(1, 8 + leftLegOffset, pantsColor);
+        pixel(2, 7 + leftLegOffset, pantsColor);
+        pixel(2, 8 + leftLegOffset, pantsColor);
+        
+        // Right leg
+        pixel(3, 7 + rightLegOffset, pantsColor);
+        pixel(3, 8 + rightLegOffset, pantsColor);
+        pixel(4, 7 + rightLegOffset, pantsColor);
+        pixel(4, 8 + rightLegOffset, pantsColor);
+        
+        // Boots (rows 9-10)
+        pixel(1, 9 + leftLegOffset, bootColor);
+        pixel(2, 9 + leftLegOffset, bootColor);
+        pixel(1, 10 + leftLegOffset, bootColor);
+        pixel(2, 10 + leftLegOffset, bootColor);
+        
+        pixel(3, 9 + rightLegOffset, bootColor);
+        pixel(4, 9 + rightLegOffset, bootColor);
+        pixel(3, 10 + rightLegOffset, bootColor);
+        pixel(4, 10 + rightLegOffset, bootColor);
+    }
+    
+    drawSword(ctx, angle) {
+        ctx.save();
+        
+        // Hand position - aligned with arm/shoulder area (lower on body)
+        const handX = this.x + this.width - 4;
+        const handY = this.y + this.height * 0.5; // Middle of body, not head
+        
+        // Attack recoil
+        const attackRecoil = this.isAttacking ? Math.sin((1 - this.attackTime / PLAYER_CONFIG.attackCooldown) * Math.PI) * 2 : 0;
+        
+        ctx.translate(handX + attackRecoil, handY);
+        ctx.rotate((angle * Math.PI) / 180);
+        
+        // Sword blade (steel)
+        ctx.fillStyle = '#C0C0C0';
+        ctx.fillRect(0, -2, 28, 4);
+        
+        // Blade highlight
+        ctx.fillStyle = '#E8E8E8';
+        ctx.fillRect(0, -2, 28, 1);
+        
+        // Blade edge (darker)
+        ctx.fillStyle = '#808080';
+        ctx.fillRect(0, 1, 28, 1);
+        
+        // Sword tip (pointed)
+        ctx.fillStyle = '#C0C0C0';
+        ctx.beginPath();
+        ctx.moveTo(28, -2);
+        ctx.lineTo(32, 0);
+        ctx.lineTo(28, 2);
+        ctx.fill();
+        
+        // Cross guard
+        ctx.fillStyle = '#8B7355';
+        ctx.fillRect(-2, -6, 4, 12);
+        
+        // Guard highlights
+        ctx.fillStyle = '#A0895A';
+        ctx.fillRect(-2, -6, 4, 2);
+        
+        // Handle (grip)
+        ctx.fillStyle = '#654321';
+        ctx.fillRect(-10, -3, 8, 6);
+        
+        // Pommel
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(-14, -4, 4, 8);
+        
+        ctx.restore();
+    }
+    
+    drawShield(ctx) {
+        // Shield position at left arm
+        const shieldX = this.x - 6;
+        const shieldY = this.y + this.height * 0.4;
+        
+        // Blocking animation - shield comes forward
+        const blockOffset = this.isBlocking ? -4 : 0;
+        
+        ctx.save();
+        ctx.translate(blockOffset, 0);
+        
+        // Shield base (metal) - kite shield shape
+        ctx.fillStyle = '#7C8B9C';
+        ctx.beginPath();
+        ctx.moveTo(shieldX, shieldY);
+        ctx.lineTo(shieldX + 14, shieldY + 2);
+        ctx.lineTo(shieldX + 14, shieldY + 22);
+        ctx.lineTo(shieldX + 7, shieldY + 28);
+        ctx.lineTo(shieldX, shieldY + 22);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Shield rim
+        ctx.strokeStyle = '#5A6B7C';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(shieldX, shieldY);
+        ctx.lineTo(shieldX + 14, shieldY + 2);
+        ctx.lineTo(shieldX + 14, shieldY + 22);
+        ctx.lineTo(shieldX + 7, shieldY + 28);
+        ctx.lineTo(shieldX, shieldY + 22);
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Shield boss (center decoration)
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(shieldX + 7, shieldY + 12, 4, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Blue emblem stripe
+        ctx.fillStyle = '#3498db';
+        ctx.fillRect(shieldX + 5, shieldY + 8, 4, 8);
+        
+        // Highlight
+        ctx.fillStyle = '#A0B0C0';
+        ctx.fillRect(shieldX + 2, shieldY + 4, 2, 18);
+        
+        ctx.restore();
+    }
+    
+    drawShieldOnBack(ctx) {
+        // Shield on back (smaller, visible when not blocking)
+        const shieldX = this.x + 2;
+        const shieldY = this.y + this.height * 0.35;
+        
+        ctx.save();
+        
+        // Shield base (metal) - smaller kite shield on back
+        ctx.fillStyle = '#7C8B9C';
+        ctx.beginPath();
+        ctx.moveTo(shieldX, shieldY);
+        ctx.lineTo(shieldX + 8, shieldY + 1);
+        ctx.lineTo(shieldX + 8, shieldY + 12);
+        ctx.lineTo(shieldX + 4, shieldY + 16);
+        ctx.lineTo(shieldX, shieldY + 12);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Shield rim
+        ctx.strokeStyle = '#5A6B7C';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(shieldX, shieldY);
+        ctx.lineTo(shieldX + 8, shieldY + 1);
+        ctx.lineTo(shieldX + 8, shieldY + 12);
+        ctx.lineTo(shieldX + 4, shieldY + 16);
+        ctx.lineTo(shieldX, shieldY + 12);
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Shield boss (center)
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(shieldX + 4, shieldY + 7, 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
+    }
+    
+    usePotion(potionId) {
+        // This method now only applies potion effects
+        // Inventory management is handled by the UI layer
+        const potion = POTIONS[potionId];
+        if (!potion) return false;
+        
+        // Apply effect
+        if (potion.effect.type === 'heal') {
+            // Check if already at full health
+            if (this.hp >= this.stats.maxHp) {
+                if (window.gameUI) {
+                    window.gameUI.showNotification('Already at full health!', 'damage');
+                }
+                return false;
+            }
+            
+            const healAmount = Math.min(potion.effect.value, this.stats.maxHp - this.hp);
+            this.hp += healAmount;
+            if (window.gameUI) {
+                window.gameUI.showNotification(`+${healAmount} HP`, 'item');
+                window.gameUI.showDamage(this.x + this.width / 2, this.y, `+${healAmount}`, false, '#2ecc71');
+            }
+            
+            // Play heal sound
+            if (window.soundManager) {
+                window.soundManager.play('heal');
+            }
+        } else if (potion.effect.type === 'buff') {
+            // Check if buff is already active
+            const existingBuff = this.activeBuffs.find(b => b.stat === potion.effect.stat);
+            if (existingBuff) {
+                // Refresh duration
+                existingBuff.duration = potion.effect.duration;
+                if (window.gameUI) {
+                    window.gameUI.showNotification(`${potion.name} refreshed!`, 'item');
+                    window.gameUI.updateActivePotionsDisplay();
+                }
+            } else {
+                // Add new buff with name and color for UI display
+                this.activeBuffs.push({
+                    stat: potion.effect.stat,
+                    value: potion.effect.value,
+                    duration: potion.effect.duration,
+                    name: potion.name,
+                    color: potion.color,
+                    potionId: potionId
+                });
+                if (window.gameUI) {
+                    window.gameUI.showNotification(`${potion.name} activated!`, 'level-up');
+                    window.gameUI.updateActivePotionsDisplay();
+                }
+            }
+            // Recalculate stats with new buff
+            this.recalculateStats();
+            
+            // Play buff sound
+            if (window.soundManager) {
+                window.soundManager.play('coin');
+            }
+        }
+        
+        return true;
+    }
+    
+    updateBuffs(deltaTime) {
+        let buffsExpired = false;
+        
+        // Update all active buffs
+        for (let i = this.activeBuffs.length - 1; i >= 0; i--) {
+            this.activeBuffs[i].duration -= deltaTime;
+            
+            // Remove expired buffs
+            if (this.activeBuffs[i].duration <= 0) {
+                const expiredBuff = this.activeBuffs.splice(i, 1)[0];
+                buffsExpired = true;
+                
+                if (window.gameUI) {
+                    const buffNames = {
+                        'damage': 'Strength',
+                        'defense': 'Defense',
+                        'speed': 'Speed'
+                    };
+                    window.gameUI.showNotification(`${buffNames[expiredBuff.stat]} buff expired`, 'damage');
+                    window.gameUI.updateActivePotionsDisplay();
+                }
+            }
+        }
+        
+        // Recalculate stats if any buffs expired
+        if (buffsExpired) {
+            this.recalculateStats();
+        }
+        
+        // Update potion display every frame to show timers (only when game is not paused)
+        if (this.activeBuffs.length > 0 && window.gameUI && window.game && !window.game.paused) {
+            window.gameUI.updateActivePotionsDisplay();
+        }
+    }
+    
+    getSaveData() {
+        return {
+            level: this.level,
+            xp: this.xp,
+            coins: this.coins,
+            materials: this.materials,
+            hp: this.hp,
+            statUpgrades: this.statUpgrades,
+            gear: this.gear,
+            craftedGear: this.craftedGear,
+            questProgress: this.questProgress,
+            potions: this.potions
+        };
+    }
+    
+    loadSaveData(data) {
+        this.level = data.level || 1;
+        this.xp = data.xp || 0;
+        this.coins = data.coins || 0;
+        this.materials = data.materials || 0;
+        this.hp = data.hp || PLAYER_CONFIG.baseStats.maxHp;
+        this.statUpgrades = data.statUpgrades || { maxHp: 0, damage: 0, defense: 0, speed: 0, critChance: 0 };
+        
+        // Ensure all gear slots exist (for backward compatibility with old saves)
+        this.gear = {
+            weapon: 0,
+            armor: 0,
+            trinket: 0,
+            boots: 0,
+            ...(data.gear || {})
+        };
+        
+        this.craftedGear = {
+            weapon: 0,
+            armor: 0,
+            trinket: 0,
+            boots: 0,
+            ...(data.craftedGear || {})
+        };
+        
+        this.questProgress = data.questProgress || {};
+        
+        // Load potions (for backward compatibility with old saves)
+        this.potions = data.potions || {
+            health_potion: 0,
+            elixir_strength: 0,
+            elixir_defense: 0,
+            elixir_speed: 0
+        };
+        
+        this.recalculateStats();
+    }
+}
