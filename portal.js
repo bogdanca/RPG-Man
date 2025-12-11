@@ -157,7 +157,7 @@ class LevelPortal {
 
 // Hub Portal System (for the main hub portals to dungeons)
 class Portal {
-    constructor(x, y, label = 'Portal', locked = false) {
+    constructor(x, y, label = 'Portal', locked = false, isTimeGated = false, openHour = 11) {
         this.x = x;
         this.y = y;
         this.width = 60;
@@ -165,20 +165,101 @@ class Portal {
         this.label = label;
         this.locked = locked;
         
+        // Time-gating
+        this.isTimeGated = isTimeGated;
+        this.openHour = openHour;
+        this.isTimeOpen = false;
+        this.failedToday = false; // Track if player failed today
+        
         // Animation
         this.rotation = 0;
         this.pulse = 0;
         this.particles = [];
         this.particleTimer = 0;
+        this.clockPulse = 0;
         
         // Interaction
         this.playerNearby = false;
         this.interactRadius = 60;
+        
+        // Check time-gate status
+        this.checkTimeGate();
+    }
+    
+    checkTimeGate() {
+        if (!this.isTimeGated) {
+            this.isTimeOpen = true;
+            return;
+        }
+        
+        const now = new Date();
+        const currentHour = now.getHours();
+        
+        // Check if failed today (stored in localStorage)
+        const failedDate = localStorage.getItem('deepMinesFailedDate');
+        const today = now.toDateString();
+        
+        if (failedDate === today) {
+            this.failedToday = true;
+            this.isTimeOpen = false;
+            return;
+        } else {
+            this.failedToday = false;
+        }
+        
+        // Portal opens at the specified hour and stays open for 1 hour
+        this.isTimeOpen = (currentHour === this.openHour);
+    }
+    
+    markFailed() {
+        if (this.isTimeGated) {
+            const today = new Date().toDateString();
+            localStorage.setItem('deepMinesFailedDate', today);
+            this.failedToday = true;
+            this.isTimeOpen = false;
+        }
+    }
+    
+    getTimeStatus() {
+        if (!this.isTimeGated) return null;
+        
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        
+        if (this.failedToday) {
+            return 'Closed until tomorrow';
+        }
+        
+        if (this.isTimeOpen) {
+            const minutesLeft = 60 - currentMinute;
+            return `Open! ${minutesLeft}m remaining`;
+        }
+        
+        // Calculate time until opening
+        let hoursUntil = this.openHour - currentHour;
+        if (hoursUntil < 0) hoursUntil += 24;
+        
+        if (hoursUntil === 0) {
+            return `Opens in ${60 - currentMinute}m`;
+        }
+        
+        return `Opens at ${this.openHour}:00`;
     }
     
     update(deltaTime, player) {
-        // Don't animate or allow interaction if locked
-        if (!this.locked) {
+        // Re-check time gate periodically
+        if (this.isTimeGated) {
+            this.checkTimeGate();
+        }
+        
+        this.clockPulse += deltaTime * 0.004;
+        
+        // Determine if portal is accessible
+        const isAccessible = !this.locked && (!this.isTimeGated || this.isTimeOpen);
+        
+        // Don't animate or allow interaction if locked or time-gated closed
+        if (isAccessible) {
             this.rotation += deltaTime * 0.001;
             this.pulse += deltaTime * 0.003;
             
@@ -197,6 +278,12 @@ class Portal {
             }
         } else {
             this.playerNearby = false;
+            
+            // Still check if player is nearby for showing status
+            let dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            let dy = (player.y + player.height / 2) - (this.y + this.height / 2);
+            let distance = Math.sqrt(dx * dx + dy * dy);
+            this.playerNearby = distance < this.interactRadius;
         }
         
         // Update particles
@@ -224,7 +311,8 @@ class Portal {
     }
     
     checkInteraction(player, key) {
-        if (!this.locked && this.playerNearby && checkCollision(this, player) && key) {
+        const isAccessible = !this.locked && (!this.isTimeGated || this.isTimeOpen);
+        if (isAccessible && this.playerNearby && checkCollision(this, player) && key) {
             return true;
         }
         return false;
@@ -233,8 +321,23 @@ class Portal {
     draw(ctx) {
         ctx.save();
         
-        // Choose colors based on locked state
-        let portalColor = this.locked ? '100, 100, 100' : '138, 43, 226';
+        // Determine portal state
+        const isAccessible = !this.locked && (!this.isTimeGated || this.isTimeOpen);
+        const isTimeClosed = this.isTimeGated && !this.isTimeOpen;
+        
+        // Choose colors based on state
+        let portalColor;
+        if (this.locked) {
+            portalColor = '100, 100, 100';
+        } else if (isTimeClosed) {
+            // Ghostly blue for time-gated closed portal
+            portalColor = '100, 150, 200';
+        } else if (this.isTimeGated && this.isTimeOpen) {
+            // Ethereal cyan when time-gated and open
+            portalColor = '0, 255, 255';
+        } else {
+            portalColor = '138, 43, 226';
+        }
         let labelColor = this.locked ? '#666' : '#8a2be2';
         
         // Portal particles (only if not locked)
@@ -302,6 +405,34 @@ class Portal {
             ctx.fillStyle = '#888';
             ctx.font = 'bold 12px monospace';
             ctx.fillText('🔒 Locked', this.x + this.width / 2, this.y - 16);
+        } else if (this.isTimeGated && this.playerNearby) {
+            // Show time status for time-gated portals
+            const status = this.getTimeStatus();
+            const boxWidth = Math.max(this.width + 60, ctx.measureText(status).width + 20);
+            
+            ctx.fillStyle = 'rgba(0, 0, 20, 0.85)';
+            ctx.fillRect(this.x + this.width/2 - boxWidth/2, this.y - 55, boxWidth, 45);
+            
+            // Border
+            ctx.strokeStyle = this.isTimeOpen ? '#00ffff' : '#4a6080';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(this.x + this.width/2 - boxWidth/2, this.y - 55, boxWidth, 45);
+            
+            // Clock icon and status
+            ctx.fillStyle = this.isTimeOpen ? '#00ffff' : '#87ceeb';
+            ctx.font = 'bold 11px monospace';
+            const clockIcon = this.isTimeOpen ? '⏰' : '🕐';
+            ctx.fillText(`${clockIcon} ${status}`, this.x + this.width / 2, this.y - 38);
+            
+            if (this.isTimeOpen) {
+                ctx.fillStyle = '#ffd700';
+                ctx.font = 'bold 12px monospace';
+                ctx.fillText('Press E to Enter', this.x + this.width / 2, this.y - 20);
+            } else {
+                ctx.fillStyle = '#666';
+                ctx.font = '10px monospace';
+                ctx.fillText('Time-locked dungeon', this.x + this.width / 2, this.y - 20);
+            }
         } else if (this.playerNearby) {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             ctx.fillRect(this.x - 20, this.y - 30, this.width + 40, 20);
@@ -309,6 +440,43 @@ class Portal {
             ctx.fillStyle = '#ffd700';
             ctx.font = 'bold 12px monospace';
             ctx.fillText('Press E to Enter', this.x + this.width / 2, this.y - 16);
+        }
+        
+        // Draw clock overlay for time-gated portals
+        if (this.isTimeGated && !this.isTimeOpen) {
+            const clockX = this.x + this.width / 2;
+            const clockY = this.y + this.height / 2 - 10;
+            const clockRadius = 12;
+            
+            // Clock face
+            ctx.fillStyle = 'rgba(0, 0, 30, 0.8)';
+            ctx.beginPath();
+            ctx.arc(clockX, clockY, clockRadius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#87ceeb';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(clockX, clockY, clockRadius, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Clock hands
+            const now = new Date();
+            const hourAngle = (now.getHours() % 12) / 12 * Math.PI * 2 - Math.PI / 2;
+            const minAngle = now.getMinutes() / 60 * Math.PI * 2 - Math.PI / 2;
+            
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(clockX, clockY);
+            ctx.lineTo(clockX + Math.cos(hourAngle) * 6, clockY + Math.sin(hourAngle) * 6);
+            ctx.stroke();
+            
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(clockX, clockY);
+            ctx.lineTo(clockX + Math.cos(minAngle) * 9, clockY + Math.sin(minAngle) * 9);
+            ctx.stroke();
         }
         
         ctx.restore();

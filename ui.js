@@ -1124,12 +1124,18 @@ class GameUI {
         });
     }
     
-    showDamage(x, y, amount, isCrit) {
+    showDamage(x, y, amount, isCrit, customColor = null) {
         let div = document.createElement('div');
         div.className = 'damage-number ' + (isCrit ? 'crit' : 'damage');
         div.textContent = isCrit ? `${amount}!` : amount;
         div.style.left = x + 'px';
         div.style.top = y + 'px';
+        
+        // Apply custom color if provided (for spell damage)
+        if (customColor) {
+            div.style.color = customColor;
+            div.style.textShadow = `0 0 10px ${customColor}, 0 2px 4px rgba(0,0,0,0.8)`;
+        }
         
         this.damageNumbersContainer.appendChild(div);
         

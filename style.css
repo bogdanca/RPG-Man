@@ -1493,6 +1493,128 @@ body {
     text-align: center;
 }
 
+/* Spell Slot */
+.spell-slot {
+    position: absolute;
+    bottom: 4px;
+    left: calc(50% + 85px);
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, rgba(30, 60, 120, 0.4), rgba(20, 40, 80, 0.3));
+    border: 2px solid rgba(100, 180, 255, 0.5);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    overflow: hidden;
+}
+
+.spell-slot:hover:not(.locked):not(.on-cooldown) {
+    border-color: rgba(100, 200, 255, 0.9);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.6);
+    transform: scale(1.1);
+}
+
+.spell-slot.locked {
+    background: linear-gradient(135deg, rgba(60, 60, 60, 0.4), rgba(40, 40, 40, 0.3));
+    border-color: rgba(100, 100, 100, 0.5);
+    cursor: not-allowed;
+}
+
+.spell-slot.locked .spell-icon {
+    opacity: 0.3;
+    filter: grayscale(1);
+}
+
+.spell-slot.on-cooldown {
+    cursor: not-allowed;
+}
+
+.spell-keybind {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: rgba(0, 0, 0, 0.9);
+    color: #64B4FF;
+    font-weight: bold;
+    font-size: 9px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #64B4FF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 6px rgba(100, 180, 255, 0.5), 0 2px 4px rgba(0, 0, 0, 0.6);
+    z-index: 5;
+}
+
+.spell-icon {
+    font-size: 20px;
+    z-index: 1;
+    text-shadow: 0 0 10px rgba(100, 180, 255, 0.8);
+}
+
+.spell-cooldown-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    height: 0%;
+    transition: height 0.1s linear;
+    z-index: 2;
+}
+
+.spell-cooldown-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 11px;
+    font-weight: bold;
+    text-shadow: 0 0 3px #000;
+    z-index: 3;
+}
+
+.spell-lock-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    z-index: 4;
+    opacity: 0.8;
+}
+
+.spell-slot:not(.locked) .spell-lock-overlay {
+    display: none;
+}
+
+.spell-slot.unlocked {
+    animation: spell-unlock 1s ease-out;
+}
+
+@keyframes spell-unlock {
+    0% { box-shadow: 0 0 30px rgba(100, 180, 255, 1); transform: scale(1.3); }
+    50% { box-shadow: 0 0 50px rgba(100, 180, 255, 0.8); }
+    100% { box-shadow: none; transform: scale(1); }
+}
+
+.spell-slot.casting {
+    animation: spell-cast 0.3s ease-out;
+}
+
+@keyframes spell-cast {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.9); box-shadow: 0 0 20px rgba(100, 180, 255, 1); }
+    100% { transform: scale(1); }
+}
+
 .upgrade-item, .quest-item {
     background: rgba(255, 255, 255, 0.05);
     padding: 8px;

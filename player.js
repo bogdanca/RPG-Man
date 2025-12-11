@@ -68,6 +68,19 @@ class Player {
         };
         this.activeBuffs = [];
         this.jumpBufferTime = 0;
+        
+        // Spells
+        this.spells = {
+            thunderstrike: {
+                unlocked: false,
+                cooldown: 0,
+                maxCooldown: 45000, // 45 seconds
+                damage: 25 // Base damage, scales slightly with player damage
+            }
+        };
+        
+        // Check if spell was previously unlocked
+        this.loadSpellUnlockState();
         this.invulnerableTime = 0;
         this.isBlocking = false;
         this.blockReduction = 0; // 100% damage reduction when blocking
@@ -101,8 +114,8 @@ class Player {
         // Blocking (mouse right click) - check early to apply movement penalty
         this.isBlocking = keys.mouseBlock || false;
         
-        // Movement
-        let moveSpeed = this.stats.speed;
+        // Movement - base speed + speed stat bonus
+        let moveSpeed = PLAYER_CONFIG.baseMovementSpeed + this.stats.speed;
         
         // Reduce movement speed by 50% when blocking
         if (this.isBlocking) {
@@ -331,6 +344,25 @@ class Player {
         this.y = 400;
         this.vx = 0;
         this.vy = 0;
+        
+        // Check if died in Deep Mines - mark as failed for today
+        if (window.game && window.game.currentZone === 'deep_mines_boss') {
+            // Mark Deep Mines as failed for today
+            const today = new Date().toDateString();
+            localStorage.setItem('deepMinesFailedDate', today);
+            
+            if (window.gameUI) {
+                window.gameUI.hideDeathScreen();
+                window.gameUI.showNotification('💀 The Phantom Dragon claims another soul...', 'damage');
+                setTimeout(() => {
+                    window.gameUI.showNotification('⏰ Deep Mines sealed until tomorrow', 'damage');
+                }, 1500);
+            }
+            
+            // Teleport back to hub
+            window.game.loadZone('hub');
+            return;
+        }
         
         // Lose 20% of current XP
         let lostXP = Math.floor(this.xp * 0.2);
@@ -1049,5 +1081,107 @@ class Player {
         };
         
         this.recalculateStats();
+        
+        // Load spell unlock state
+        this.loadSpellUnlockState();
+    }
+    
+    loadSpellUnlockState() {
+        const unlocked = localStorage.getItem('thunderstrikeUnlocked') === 'true';
+        this.spells.thunderstrike.unlocked = unlocked;
+        this.updateSpellSlotUI();
+    }
+    
+    unlockThunderstrike() {
+        if (!this.spells.thunderstrike.unlocked) {
+            this.spells.thunderstrike.unlocked = true;
+            localStorage.setItem('thunderstrikeUnlocked', 'true');
+            this.updateSpellSlotUI();
+            
+            // Play unlock animation
+            const spellSlot = document.getElementById('spell-slot');
+            if (spellSlot) {
+                spellSlot.classList.add('unlocked');
+                setTimeout(() => spellSlot.classList.remove('unlocked'), 1000);
+            }
+            
+            if (window.gameUI) {
+                window.gameUI.showNotification('⚡ Thunderstrike spell unlocked!', 'level-up');
+            }
+        }
+    }
+    
+    updateSpellSlotUI() {
+        const spellSlot = document.getElementById('spell-slot');
+        if (!spellSlot) return;
+        
+        if (this.spells.thunderstrike.unlocked) {
+            spellSlot.classList.remove('locked');
+            spellSlot.title = 'Thunderstrike (Q) - 45s cooldown';
+        } else {
+            spellSlot.classList.add('locked');
+            spellSlot.title = 'Thunderstrike (Q) - Defeat the Phantom Dragon to unlock';
+        }
+    }
+    
+    updateSpellCooldowns(deltaTime) {
+        if (this.spells.thunderstrike.cooldown > 0) {
+            this.spells.thunderstrike.cooldown -= deltaTime;
+            if (this.spells.thunderstrike.cooldown < 0) {
+                this.spells.thunderstrike.cooldown = 0;
+            }
+            this.updateSpellCooldownUI();
+        }
+    }
+    
+    updateSpellCooldownUI() {
+        const spellSlot = document.getElementById('spell-slot');
+        const cooldownOverlay = spellSlot?.querySelector('.spell-cooldown-overlay');
+        const cooldownText = spellSlot?.querySelector('.spell-cooldown-text');
+        
+        if (!spellSlot || !cooldownOverlay || !cooldownText) return;
+        
+        const spell = this.spells.thunderstrike;
+        
+        if (spell.cooldown > 0) {
+            spellSlot.classList.add('on-cooldown');
+            const percent = (spell.cooldown / spell.maxCooldown) * 100;
+            cooldownOverlay.style.height = percent + '%';
+            cooldownText.textContent = Math.ceil(spell.cooldown / 1000) + 's';
+        } else {
+            spellSlot.classList.remove('on-cooldown');
+            cooldownOverlay.style.height = '0%';
+            cooldownText.textContent = '';
+        }
+    }
+    
+    canCastThunderstrike() {
+        return this.spells.thunderstrike.unlocked && 
+               this.spells.thunderstrike.cooldown <= 0 &&
+               this.hp > 0;
+    }
+    
+    castThunderstrike() {
+        if (!this.canCastThunderstrike()) {
+            if (!this.spells.thunderstrike.unlocked && window.gameUI) {
+                window.gameUI.showNotification('⚡ Spell locked - Defeat the Phantom Dragon', 'damage');
+            } else if (this.spells.thunderstrike.cooldown > 0 && window.gameUI) {
+                const remaining = Math.ceil(this.spells.thunderstrike.cooldown / 1000);
+                window.gameUI.showNotification(`⚡ Thunderstrike on cooldown (${remaining}s)`, 'damage');
+            }
+            return false;
+        }
+        
+        // Start cooldown
+        this.spells.thunderstrike.cooldown = this.spells.thunderstrike.maxCooldown;
+        
+        // Play cast animation on UI
+        const spellSlot = document.getElementById('spell-slot');
+        if (spellSlot) {
+            spellSlot.classList.add('casting');
+            setTimeout(() => spellSlot.classList.remove('casting'), 300);
+        }
+        
+        return true;
     }
 }

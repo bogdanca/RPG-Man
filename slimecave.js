@@ -22,7 +22,8 @@ class SlimeCave {
             1: { wall: '#2a3a2a', slime: '#4a8a4a' },  // Green
             2: { wall: '#2a2a3a', slime: '#4a6a9a' },  // Blue
             3: { wall: '#3a2a2a', slime: '#9a4a4a' },  // Red
-            4: { wall: '#3a2a3a', slime: '#7a4a8a' }   // Purple
+            4: { wall: '#3a2a3a', slime: '#7a4a8a' },  // Purple
+            5: { wall: '#0a0a15', slime: '#3a5a7a' }   // Deep Mines - Ghostly blue
         };
         
         const colors = floorColors[this.currentFloor] || floorColors[1];
@@ -87,6 +88,9 @@ class SlimeCave {
                 break;
             case 4:
                 this.drawFloor4Decor(ctx);
+                break;
+            case 5:
+                this.drawDeepMinesDecor(ctx);
                 break;
         }
     }
@@ -614,6 +618,120 @@ class SlimeCave {
             ctx.fill();
             ctx.globalAlpha = 1;
         }
+    }
+    drawDeepMinesDecor(ctx) {
+        // Deep Mines: Ghostly, ethereal atmosphere with skeletal remains
+        
+        // Ghostly fog at bottom
+        const time = Date.now() * 0.001;
+        ctx.globalAlpha = 0.15;
+        for (let i = 0; i < 5; i++) {
+            const fogX = (time * 20 + i * 200) % 1000 - 100;
+            const fogY = 480 + Math.sin(time + i) * 20;
+            
+            const fogGradient = ctx.createRadialGradient(fogX, fogY, 0, fogX, fogY, 150);
+            fogGradient.addColorStop(0, 'rgba(135, 206, 235, 0.3)');
+            fogGradient.addColorStop(1, 'rgba(135, 206, 235, 0)');
+            ctx.fillStyle = fogGradient;
+            ctx.fillRect(fogX - 150, fogY - 100, 300, 200);
+        }
+        ctx.globalAlpha = 1;
+        
+        // Floating ghostly orbs
+        for (let i = 0; i < 8; i++) {
+            const orbX = 100 + (i * 90) + Math.sin(time * 0.5 + i * 2) * 30;
+            const orbY = 150 + Math.sin(time * 0.7 + i) * 100;
+            const orbAlpha = 0.2 + Math.sin(time * 2 + i) * 0.1;
+            
+            ctx.globalAlpha = orbAlpha;
+            const orbGradient = ctx.createRadialGradient(orbX, orbY, 0, orbX, orbY, 20);
+            orbGradient.addColorStop(0, 'rgba(135, 206, 235, 0.8)');
+            orbGradient.addColorStop(0.5, 'rgba(100, 150, 200, 0.3)');
+            orbGradient.addColorStop(1, 'rgba(100, 150, 200, 0)');
+            ctx.fillStyle = orbGradient;
+            ctx.beginPath();
+            ctx.arc(orbX, orbY, 20, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        
+        // Skeletal remains scattered around
+        const bones = [
+            { x: 120, y: 530 },
+            { x: 350, y: 535 },
+            { x: 550, y: 528 },
+            { x: 680, y: 532 }
+        ];
+        
+        ctx.strokeStyle = 'rgba(200, 200, 220, 0.6)';
+        ctx.lineWidth = 2;
+        for (let bone of bones) {
+            // Skull
+            ctx.fillStyle = 'rgba(200, 200, 220, 0.5)';
+            ctx.beginPath();
+            ctx.ellipse(bone.x, bone.y, 8, 6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Eye sockets
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(bone.x - 3, bone.y - 1, 2, 0, Math.PI * 2);
+            ctx.arc(bone.x + 3, bone.y - 1, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Scattered bones
+            ctx.strokeStyle = 'rgba(200, 200, 220, 0.4)';
+            ctx.beginPath();
+            ctx.moveTo(bone.x + 15, bone.y + 5);
+            ctx.lineTo(bone.x + 35, bone.y + 8);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(bone.x - 10, bone.y + 8);
+            ctx.lineTo(bone.x - 25, bone.y + 3);
+            ctx.stroke();
+        }
+        
+        // Ethereal chains hanging from ceiling
+        ctx.strokeStyle = 'rgba(100, 120, 150, 0.4)';
+        ctx.lineWidth = 3;
+        const chains = [150, 350, 500, 650];
+        for (let chainX of chains) {
+            const swayOffset = Math.sin(time * 0.8 + chainX * 0.01) * 10;
+            ctx.beginPath();
+            ctx.moveTo(chainX, 60);
+            for (let y = 60; y < 180; y += 15) {
+                const xOffset = Math.sin(y * 0.1 + time) * 5 + swayOffset * (y / 180);
+                ctx.lineTo(chainX + xOffset, y);
+            }
+            ctx.stroke();
+        }
+        
+        // Glowing runes on walls
+        const runes = ['◊', '△', '○', '☆', '◇'];
+        ctx.font = '16px monospace';
+        ctx.textAlign = 'center';
+        
+        // Left wall runes
+        for (let i = 0; i < 4; i++) {
+            const runeAlpha = 0.3 + Math.sin(time * 2 + i) * 0.2;
+            ctx.fillStyle = `rgba(135, 206, 235, ${runeAlpha})`;
+            ctx.fillText(runes[i % runes.length], 40, 150 + i * 100);
+        }
+        
+        // Right wall runes
+        for (let i = 0; i < 4; i++) {
+            const runeAlpha = 0.3 + Math.sin(time * 2 + i + 2) * 0.2;
+            ctx.fillStyle = `rgba(135, 206, 235, ${runeAlpha})`;
+            ctx.fillText(runes[(i + 2) % runes.length], 760, 150 + i * 100);
+        }
+        
+        // Dark vignette effect
+        const vignetteGradient = ctx.createRadialGradient(400, 300, 100, 400, 300, 500);
+        vignetteGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        vignetteGradient.addColorStop(0.7, 'rgba(0, 0, 20, 0.3)');
+        vignetteGradient.addColorStop(1, 'rgba(0, 0, 20, 0.6)');
+        ctx.fillStyle = vignetteGradient;
+        ctx.fillRect(0, 0, 800, 600);
     }
 }
 

@@ -11,7 +11,7 @@ const GAME_CONFIG = {
 const PLAYER_CONFIG = {
     width: 24,
     height: 32,
-    speed: 4,
+    baseMovementSpeed: 4, // Fixed base movement speed (not affected by stats)
     jumpPower: 12,
     doubleJumpPower: 10,
     attackCooldown: 350,
@@ -20,7 +20,7 @@ const PLAYER_CONFIG = {
         maxHp: 100,
         damage: 10,
         defense: 5,
-        speed: 4,
+        speed: 0, // Speed stat now adds bonus to base movement
         critChance: 0.05
     }
 };
@@ -134,6 +134,32 @@ const ENEMY_TYPES = {
         projectileDamage: 30,
         projectileSpeed: 4,
         projectileColor: '#1abc9c'
+    },
+    
+    // Deep Mines Boss - Phantom Dragon (Time-gated)
+    phantom_dragon: {
+        name: 'Phantom Dragon',
+        width: 120,
+        height: 80,
+        hp: 2500,
+        damage: 45,
+        damageMax: 70,
+        speed: 2.0,
+        xp: 8000,
+        coins: 500,
+        materials: 50,
+        color: 'rgba(100, 180, 255, 0.3)', // Ghostly blue, semi-transparent
+        behavior: 'phantom_dragon',
+        shootCooldown: 2500,
+        projectileDamage: 40,
+        projectileSpeed: 5,
+        projectileColor: '#87ceeb',
+        // Phantom abilities
+        invisDuration: 3000,      // How long it stays invisible
+        visibleDuration: 4000,    // How long it stays visible
+        breathCooldown: 5000,     // Ghostly breath attack
+        breathDamage: 60,
+        phaseShiftCooldown: 8000  // Teleport ability
     }
 };
 
@@ -148,7 +174,7 @@ const ZONES = [
         platformColor: '#4a3a2a',
         procedural: false,
         portals: [
-            { x: 145, y: 340, label: 'Deep Mines', targetDungeon: 'slime_caves', locked: true },
+            { x: 145, y: 340, label: 'Deep Mines', targetDungeon: 'deep_mines', locked: false, isTimeGated: true, openHour: 11 },
             { x: 370, y: 300, label: 'Slime Caves', targetDungeon: 'slime_caves', locked: false },
             { x: 595, y: 340, label: 'Crystal Depths', targetDungeon: 'slime_caves', locked: true }
         ]
@@ -234,6 +260,38 @@ const ZONES = [
         ],
         xpRequired: 2000,
         exitToHub: true
+    },
+    
+    // Deep Mines - Time-gated dungeon (opens at 11:00 local time)
+    {
+        id: 'deep_mines_boss',
+        name: 'The Phantom\'s Lair',
+        dungeon: 'deep_mines',
+        floor: 5, // Uses special Deep Mines floor decoration
+        requiredLevel: 10,
+        type: 'dungeon',
+        isBoss: true,
+        isTimeGated: true,
+        openHour: 11, // Opens at 11:00 AM local time
+        procedural: false,
+        backgroundColor: '#0a0a15',
+        platformColor: '#1a1a2e',
+        enemyTypes: [
+            { type: 'phantom_dragon', weight: 1.0 }
+        ],
+        enemyCount: { min: 1, max: 1 },
+        platforms: [
+            { x: 0, y: 550, width: 800, height: 50 },
+            { x: 50, y: 450, width: 120, height: 20 },
+            { x: 630, y: 450, width: 120, height: 20 },
+            { x: 200, y: 380, width: 100, height: 20 },
+            { x: 500, y: 380, width: 100, height: 20 },
+            { x: 325, y: 300, width: 150, height: 20 },
+            { x: 100, y: 220, width: 100, height: 20 },
+            { x: 600, y: 220, width: 100, height: 20 }
+        ],
+        xpRequired: 8000,
+        exitToHub: true
     }
 ];
 
@@ -260,7 +318,7 @@ const STAT_UPGRADES = {
         name: 'Speed',
         baseCost: 20,
         costMultiplier: 1.8,
-        increment: 0.3
+        increment: 0.15
     },
     critChance: {
         name: 'Crit Chance',
@@ -378,6 +436,13 @@ const QUESTS = [
         description: 'Defeat the Slime King',
         target: { enemy: 'slime_king', count: 1 },
         reward: { xp: 1000, coins: 200 }
+    },
+    {
+        id: 'kill_phantom_dragon',
+        name: 'Dragon Slayer',
+        description: 'Defeat the Phantom Dragon',
+        target: { enemy: 'phantom_dragon', count: 1 },
+        reward: { xp: 5000, coins: 1000 }
     }
 ];
 

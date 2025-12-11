@@ -32,6 +32,9 @@ class Game {
         this.levelGenerator = new LevelGenerator();
         this.npcManager = new NPCManager();
         
+        // Spell effects
+        this.thunderstrikeEffect = null;
+        
         // UI
         this.ui = new GameUI(this);
         window.gameUI = this.ui;
@@ -71,8 +74,13 @@ class Game {
             if (e.key === 'b' || e.key === 'B') {
                 this.ui.togglePanel('blacksmith-panel');
             }
-            if (e.key === 'q' || e.key === 'Q') {
+            if (e.key === 'l' || e.key === 'L') {
                 this.ui.togglePanel('quests-panel');
+            }
+            
+            // Thunderstrike spell (Q)
+            if (e.key === 'q' || e.key === 'Q') {
+                this.castThunderstrike();
             }
             
             // Escape to close panels
@@ -131,7 +139,7 @@ class Game {
         }, 10000);
     }
     
-    loadZone(zoneId) {
+    loadZone(zoneId, entryPortalType = null) {
         // Find zone by ID
         let zone = ZONES.find(z => z.id === zoneId);
         if (!zone) {
@@ -146,6 +154,45 @@ class Game {
         }
         
         this.currentZone = zoneId;
+        
+        // Reset player velocity to prevent momentum carrying over
+        this.player.vx = 0;
+        this.player.vy = 0;
+        
+        // Clear all movement keys to prevent auto-walk after zone transition
+        this.keys['a'] = false;
+        this.keys['A'] = false;
+        this.keys['d'] = false;
+        this.keys['D'] = false;
+        this.keys['w'] = false;
+        this.keys['W'] = false;
+        this.keys['s'] = false;
+        this.keys['S'] = false;
+        this.keys[' '] = false;
+        this.keys['ArrowLeft'] = false;
+        this.keys['ArrowRight'] = false;
+        this.keys['ArrowUp'] = false;
+        this.keys['ArrowDown'] = false;
+        this.keys['e'] = false;
+        this.keys['E'] = false;
+        this.keys.jumpWasPressed = false;
+        
+        // Set player spawn position based on entry portal type
+        const groundY = this.canvas.height - 80; // Standard ground spawn height
+        if (entryPortalType === 'previous') {
+            // Came from previous zone via "previous" portal, spawn on RIGHT side (away from previous portal)
+            this.player.x = this.canvas.width - 120;
+            this.player.y = groundY;
+        } else if (entryPortalType === 'next') {
+            // Came from next zone via "next" portal, spawn on LEFT side (away from next portal)
+            this.player.x = 80;
+            this.player.y = groundY;
+        } else if (entryPortalType === 'hub' || zone.type === 'dungeon') {
+            // Entering dungeon from hub, spawn on LEFT side
+            this.player.x = 80;
+            this.player.y = groundY;
+        }
+        // For hub zone, keep player position or use default
         this.zoneXpGained = 0;
         this.previousPortal = null;
         this.nextPortal = null;
@@ -264,7 +311,14 @@ class Game {
         // Create portals for hub
         if (zone.portals && zone.portals.length > 0) {
             zone.portals.forEach(portalData => {
-                let portal = new Portal(portalData.x, portalData.y, portalData.label, portalData.locked);
+                let portal = new Portal(
+                    portalData.x, 
+                    portalData.y, 
+                    portalData.label, 
+                    portalData.locked,
+                    portalData.isTimeGated || false,
+                    portalData.openHour || 11
+                );
                 portal.targetZone = this.getDungeonEntrance(portalData.targetDungeon);
                 this.portals.push(portal);
             });
@@ -448,11 +502,17 @@ class Game {
         // Update particles
         this.particleSystem.update(this.deltaTime);
         
+        // Update spell cooldowns
+        this.player.updateSpellCooldowns(this.deltaTime);
+        
+        // Update thunderstrike effect
+        this.updateThunderstrike(this.deltaTime);
+        
         // Update portals
         if (this.previousPortal) {
             let targetZone = this.previousPortal.update(this.deltaTime, this.player);
             if (targetZone) {
-                this.loadZone(targetZone);
+                this.loadZone(targetZone, 'previous');
                 this.keys['e'] = false;
                 this.keys['E'] = false;
             }
@@ -460,7 +520,7 @@ class Game {
         if (this.nextPortal) {
             let targetZone = this.nextPortal.update(this.deltaTime, this.player);
             if (targetZone) {
-                this.loadZone(targetZone);
+                this.loadZone(targetZone, 'next');
                 this.keys['e'] = false;
                 this.keys['E'] = false;
             }
@@ -470,7 +530,7 @@ class Game {
         for (let portal of this.portals) {
             portal.update(this.deltaTime, this.player);
             if (portal.checkInteraction(this.player, this.keys['e'] || this.keys['E'])) {
-                this.loadZone(portal.targetZone);
+                this.loadZone(portal.targetZone, 'hub');
                 this.keys['e'] = false;
                 this.keys['E'] = false;
             }
@@ -583,6 +643,9 @@ class Game {
         
         // Draw particles
         this.particleSystem.draw(this.ctx);
+        
+        // Draw thunderstrike effect (on top of everything)
+        this.drawThunderstrike(this.ctx);
         
         // Draw zone info - DISABLED (removed bottom-left zone indicator)
         // this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -766,6 +829,209 @@ class Game {
             
             console.log('Game loaded from save');
         }
+    }
+    
+    castThunderstrike() {
+        if (!this.player.castThunderstrike()) {
+            return;
+        }
+        
+        // Create thunderstrike effect
+        const playerCenterX = this.player.x + this.player.width / 2;
+        
+        this.thunderstrikeEffect = {
+            x: playerCenterX,
+            startY: 0,
+            endY: this.canvas.height,
+            time: 0,
+            duration: 800,
+            bolts: [],
+            hitEnemies: new Set()
+        };
+        
+        // Generate lightning bolt paths
+        for (let i = 0; i < 3; i++) {
+            const bolt = this.generateLightningBolt(
+                playerCenterX + (i - 1) * 60,
+                0,
+                playerCenterX + (i - 1) * 60 + (Math.random() - 0.5) * 40,
+                this.canvas.height - 50
+            );
+            this.thunderstrikeEffect.bolts.push(bolt);
+        }
+        
+        // Play sound effect (if available)
+        if (window.soundManager) {
+            window.soundManager.play('lightning');
+        }
+        
+        // Calculate damage (base + small scaling from player damage)
+        const baseDamage = this.player.spells.thunderstrike.damage;
+        const bonusDamage = Math.floor(this.player.stats.damage * 0.3);
+        const totalDamage = baseDamage + bonusDamage;
+        
+        // Damage all enemies on screen
+        for (let enemy of this.enemies) {
+            if (enemy.alive) {
+                // Apply lightning damage
+                enemy.takeDamage(totalDamage, false);
+                
+                // Show blue lightning damage
+                if (this.ui) {
+                    this.ui.showDamage(
+                        enemy.x + enemy.width / 2,
+                        enemy.y,
+                        totalDamage,
+                        false,
+                        '#64B4FF' // Blue lightning color
+                    );
+                }
+                
+                // Spawn lightning particles on enemy
+                for (let j = 0; j < 5; j++) {
+                    this.particleSystem.emit(
+                        enemy.x + Math.random() * enemy.width,
+                        enemy.y + Math.random() * enemy.height,
+                        2,
+                        '#64B4FF'
+                    );
+                }
+            }
+        }
+    }
+    
+    generateLightningBolt(startX, startY, endX, endY) {
+        const points = [{ x: startX, y: startY }];
+        const segments = 12;
+        const dx = (endX - startX) / segments;
+        const dy = (endY - startY) / segments;
+        
+        for (let i = 1; i < segments; i++) {
+            const jitter = (Math.random() - 0.5) * 60;
+            points.push({
+                x: startX + dx * i + jitter,
+                y: startY + dy * i
+            });
+        }
+        
+        points.push({ x: endX, y: endY });
+        
+        // Generate branches
+        const branches = [];
+        for (let i = 2; i < points.length - 2; i += 3) {
+            if (Math.random() > 0.4) {
+                const branchPoints = [];
+                const branchLength = 3 + Math.floor(Math.random() * 3);
+                let bx = points[i].x;
+                let by = points[i].y;
+                const direction = Math.random() > 0.5 ? 1 : -1;
+                
+                branchPoints.push({ x: bx, y: by });
+                for (let j = 0; j < branchLength; j++) {
+                    bx += direction * (15 + Math.random() * 20);
+                    by += 20 + Math.random() * 15;
+                    branchPoints.push({ x: bx, y: by });
+                }
+                branches.push(branchPoints);
+            }
+        }
+        
+        return { points, branches };
+    }
+    
+    updateThunderstrike(deltaTime) {
+        if (!this.thunderstrikeEffect) return;
+        
+        this.thunderstrikeEffect.time += deltaTime;
+        
+        if (this.thunderstrikeEffect.time >= this.thunderstrikeEffect.duration) {
+            this.thunderstrikeEffect = null;
+        }
+    }
+    
+    drawThunderstrike(ctx) {
+        if (!this.thunderstrikeEffect) return;
+        
+        const effect = this.thunderstrikeEffect;
+        const progress = effect.time / effect.duration;
+        const alpha = progress < 0.3 ? 1 : 1 - ((progress - 0.3) / 0.7);
+        
+        ctx.save();
+        
+        // Draw screen flash at start
+        if (progress < 0.1) {
+            ctx.fillStyle = `rgba(100, 180, 255, ${0.3 * (1 - progress / 0.1)})`;
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+        
+        // Draw each bolt
+        for (let bolt of effect.bolts) {
+            // Main bolt glow
+            ctx.strokeStyle = `rgba(100, 180, 255, ${alpha * 0.3})`;
+            ctx.lineWidth = 20;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            this.drawLightningPath(ctx, bolt.points);
+            
+            // Medium glow
+            ctx.strokeStyle = `rgba(150, 200, 255, ${alpha * 0.5})`;
+            ctx.lineWidth = 8;
+            this.drawLightningPath(ctx, bolt.points);
+            
+            // Core
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.lineWidth = 3;
+            this.drawLightningPath(ctx, bolt.points);
+            
+            // Draw branches
+            for (let branch of bolt.branches) {
+                ctx.strokeStyle = `rgba(100, 180, 255, ${alpha * 0.4})`;
+                ctx.lineWidth = 6;
+                this.drawLightningPath(ctx, branch);
+                
+                ctx.strokeStyle = `rgba(200, 230, 255, ${alpha * 0.7})`;
+                ctx.lineWidth = 2;
+                this.drawLightningPath(ctx, branch);
+            }
+        }
+        
+        // Ground impact effect
+        if (progress < 0.5) {
+            const impactAlpha = (1 - progress / 0.5) * alpha;
+            const impactRadius = 50 + progress * 100;
+            
+            for (let bolt of effect.bolts) {
+                const endPoint = bolt.points[bolt.points.length - 1];
+                
+                const gradient = ctx.createRadialGradient(
+                    endPoint.x, endPoint.y, 0,
+                    endPoint.x, endPoint.y, impactRadius
+                );
+                gradient.addColorStop(0, `rgba(100, 180, 255, ${impactAlpha * 0.8})`);
+                gradient.addColorStop(0.5, `rgba(100, 180, 255, ${impactAlpha * 0.3})`);
+                gradient.addColorStop(1, 'rgba(100, 180, 255, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(endPoint.x, endPoint.y, impactRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        ctx.restore();
+    }
+    
+    drawLightningPath(ctx, points) {
+        if (points.length < 2) return;
+        
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+        
+        ctx.stroke();
     }
 }
 

@@ -322,6 +322,15 @@
                 </div>
             </div>
             
+            <!-- Spell Slot (next to potion belt) -->
+            <div id="spell-slot" class="spell-slot locked" title="Thunderstrike (Q) - Locked">
+                <div class="spell-keybind">Q</div>
+                <div class="spell-icon">⚡</div>
+                <div class="spell-cooldown-overlay"></div>
+                <div class="spell-cooldown-text"></div>
+                <div class="spell-lock-overlay">🔒</div>
+            </div>
+            
             <!-- Potion Belt Tutorial Hint -->
             <div id="potion-belt-hint" class="potion-belt-hint hidden">
                 <span class="hint-arrow">↓</span><span class="hint-text">Drag potions here</span><button class="hint-close">OK</button>
@@ -339,8 +348,8 @@
                     <div class="icon">🔮</div>
                     <div class="label">Upgrade</div>
                 </button>
-                <button class="panel-icon" data-panel="quests-panel" title="Quests (Q)">
-                    <div class="keybind">Q</div>
+<button class="panel-icon" data-panel="quests-panel" title="Quests (L)">
+                    <div class="keybind">L</div>
                     <div class="icon">📜</div>
                     <div class="label">Quests</div>
                 </button>
@@ -481,6 +490,10 @@
                             </div>
                             <div class="control-item">
                                 <div class="key-display">Q</div>
+                                <div class="control-desc">⚡ Thunderstrike - Lightning spell (unlocked after Deep Mines)</div>
+                            </div>
+                            <div class="control-item">
+                                <div class="key-display">L</div>
                                 <div class="control-desc">📜 Quests - Track your objectives</div>
                             </div>
                             <div class="control-item">
@@ -532,14 +545,8 @@
                 }, 500);
             }
             
-            // Dismiss on any key press
+            // Dismiss on any key press only (not mouse)
             document.addEventListener('keydown', dismissTitle, { once: true });
-            
-            // Dismiss on any mouse click
-            document.addEventListener('click', dismissTitle, { once: true });
-            
-            // Dismiss on any mouse button
-            document.addEventListener('mousedown', dismissTitle, { once: true });
         });
     </script>
 </body>
