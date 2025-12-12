@@ -147,6 +147,9 @@ class Game {
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (!isMobile) return;
         
+        // Auto fullscreen on landscape orientation
+        this.setupLandscapeFullscreen();
+        
         // Create mobile control overlay
         const mobileControls = document.createElement('div');
         mobileControls.id = 'mobile-controls';
@@ -268,6 +271,54 @@ class Game {
             e.preventDefault();
             this.keys.mouseBlock = false;
         }, { passive: false });
+    }
+    
+    setupLandscapeFullscreen() {
+        let isFullscreen = false;
+        
+        const requestFullscreen = () => {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(() => {});
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        };
+        
+        const exitFullscreen = () => {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(() => {});
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        };
+        
+        const checkOrientation = () => {
+            const isLandscape = window.innerWidth > window.innerHeight;
+            
+            if (isLandscape && !isFullscreen) {
+                requestFullscreen();
+                isFullscreen = true;
+            } else if (!isLandscape && isFullscreen) {
+                exitFullscreen();
+                isFullscreen = false;
+            }
+        };
+        
+        // Check on orientation change
+        window.addEventListener('orientationchange', () => {
+            setTimeout(checkOrientation, 100);
+        });
+        
+        // Also check on resize (backup for devices without orientationchange)
+        window.addEventListener('resize', checkOrientation);
+        
+        // Initial check
+        setTimeout(checkOrientation, 500);
     }
     
     loadZone(zoneId, entryPortalType = null) {
