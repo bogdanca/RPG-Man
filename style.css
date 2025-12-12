@@ -20,6 +20,31 @@ body {
     min-height: 100vh;
 }
 
+/* Force 1:1 canvas scaling on mobile */
+@media (max-width: 900px) {
+    body {
+        background: #000;
+    }
+    
+    #game-canvas {
+        width: 100vmin !important;
+        height: 100vmin !important;
+        max-width: 100vw;
+        max-height: 100vh;
+        object-fit: contain;
+    }
+    
+    #game-container {
+        width: 100vmin;
+        height: 100vmin;
+        max-width: 100vw;
+        max-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+}
+
 /* Title Screen */
 #title-screen {
     position: fixed;

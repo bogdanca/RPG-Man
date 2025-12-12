@@ -158,7 +158,6 @@ class Game {
                     <button class="mobile-btn mobile-right" data-key="ArrowRight">▶</button>
                 </div>
             </div>
-            <button class="mobile-btn mobile-fullscreen" id="mobile-fullscreen-btn">⛶</button>
             <div class="mobile-actions">
                 <button class="mobile-btn mobile-attack" data-action="attack">⚔️</button>
                 <button class="mobile-btn mobile-block" data-action="block">🛡️</button>
@@ -221,29 +220,9 @@ class Game {
             .mobile-attack { background: rgba(220, 50, 50, 0.5); }
             .mobile-block { background: rgba(50, 100, 200, 0.5); }
             .mobile-interact { font-size: 16px; font-weight: bold; }
-            .mobile-fullscreen {
-                position: fixed;
-                top: 10px;
-                right: 10px;
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-                background: rgba(0, 0, 0, 0.7);
-                z-index: 1001;
-                animation: pulse-fullscreen 2s ease-in-out infinite;
-            }
-            .mobile-fullscreen.is-fullscreen {
-                background: rgba(255, 215, 0, 0.3);
-                animation: none;
-            }
-            @keyframes pulse-fullscreen {
-                0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
-                50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.9); }
-            }
             
             @media (min-width: 900px) {
                 #mobile-controls { display: none; }
-                .mobile-fullscreen { display: none; }
             }
         `;
         document.head.appendChild(style);
@@ -290,60 +269,6 @@ class Game {
             this.keys.mouseBlock = false;
         }, { passive: false });
         
-        // Handle fullscreen toggle button
-        const fullscreenBtn = document.getElementById('mobile-fullscreen-btn');
-        
-        // Use touchend for mobile (more reliable than click)
-        fullscreenBtn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.toggleFullscreen(fullscreenBtn);
-        }, { passive: false });
-        
-        // Also support click for hybrid devices
-        fullscreenBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            this.toggleFullscreen(fullscreenBtn);
-        });
-        
-        // Update button state on fullscreen change
-        document.addEventListener('fullscreenchange', () => {
-            this.updateFullscreenButton(fullscreenBtn);
-        });
-        document.addEventListener('webkitfullscreenchange', () => {
-            this.updateFullscreenButton(fullscreenBtn);
-        });
-        
-    }
-    
-    toggleFullscreen(btn) {
-        const elem = document.documentElement;
-        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
-        
-        if (!isFullscreen) {
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen().catch(() => {});
-            } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
-            }
-        } else {
-            if (document.exitFullscreen) {
-                document.exitFullscreen().catch(() => {});
-            } else if (document.webkitExitFullscreen) {
-                document.webkitExitFullscreen();
-            }
-        }
-    }
-    
-    updateFullscreenButton(btn) {
-        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
-        if (isFullscreen) {
-            btn.classList.add('is-fullscreen');
-            btn.textContent = '⛶';
-        } else {
-            btn.classList.remove('is-fullscreen');
-            btn.textContent = '⛶';
-        }
     }
     
     loadZone(zoneId, entryPortalType = null) {
