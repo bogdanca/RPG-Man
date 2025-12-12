@@ -147,9 +147,6 @@ class Game {
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
         if (!isMobile) return;
         
-        // Auto fullscreen on landscape orientation
-        this.setupLandscapeFullscreen();
-        
         // Create mobile control overlay
         const mobileControls = document.createElement('div');
         mobileControls.id = 'mobile-controls';
@@ -161,6 +158,7 @@ class Game {
                     <button class="mobile-btn mobile-right" data-key="ArrowRight">▶</button>
                 </div>
             </div>
+            <button class="mobile-btn mobile-fullscreen" id="mobile-fullscreen-btn">⛶</button>
             <div class="mobile-actions">
                 <button class="mobile-btn mobile-attack" data-action="attack">⚔️</button>
                 <button class="mobile-btn mobile-block" data-action="block">🛡️</button>
@@ -223,9 +221,23 @@ class Game {
             .mobile-attack { background: rgba(220, 50, 50, 0.5); }
             .mobile-block { background: rgba(50, 100, 200, 0.5); }
             .mobile-interact { font-size: 16px; font-weight: bold; }
+            .mobile-fullscreen {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 1001;
+            }
+            .mobile-fullscreen.is-fullscreen {
+                background: rgba(255, 215, 0, 0.3);
+            }
             
             @media (min-width: 900px) {
                 #mobile-controls { display: none; }
+                .mobile-fullscreen { display: none; }
             }
         `;
         document.head.appendChild(style);
@@ -271,54 +283,57 @@ class Game {
             e.preventDefault();
             this.keys.mouseBlock = false;
         }, { passive: false });
+        
+        // Handle fullscreen toggle button
+        const fullscreenBtn = document.getElementById('mobile-fullscreen-btn');
+        fullscreenBtn.addEventListener('click', () => {
+            this.toggleFullscreen(fullscreenBtn);
+        });
+        
+        // Update button state on fullscreen change
+        document.addEventListener('fullscreenchange', () => {
+            this.updateFullscreenButton(fullscreenBtn);
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+            this.updateFullscreenButton(fullscreenBtn);
+        });
+        
+        // Prompt user to go fullscreen on first load
+        setTimeout(() => {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                this.toggleFullscreen(fullscreenBtn);
+            }
+        }, 1000);
     }
     
-    setupLandscapeFullscreen() {
-        let isFullscreen = false;
+    toggleFullscreen(btn) {
+        const elem = document.documentElement;
+        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
         
-        const requestFullscreen = () => {
-            const elem = document.documentElement;
+        if (!isFullscreen) {
             if (elem.requestFullscreen) {
                 elem.requestFullscreen().catch(() => {});
             } else if (elem.webkitRequestFullscreen) {
                 elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) {
-                elem.msRequestFullscreen();
             }
-        };
-        
-        const exitFullscreen = () => {
+        } else {
             if (document.exitFullscreen) {
                 document.exitFullscreen().catch(() => {});
             } else if (document.webkitExitFullscreen) {
                 document.webkitExitFullscreen();
-            } else if (document.msExitFullscreen) {
-                document.msExitFullscreen();
             }
-        };
-        
-        const checkOrientation = () => {
-            const isLandscape = window.innerWidth > window.innerHeight;
-            
-            if (isLandscape && !isFullscreen) {
-                requestFullscreen();
-                isFullscreen = true;
-            } else if (!isLandscape && isFullscreen) {
-                exitFullscreen();
-                isFullscreen = false;
-            }
-        };
-        
-        // Check on orientation change
-        window.addEventListener('orientationchange', () => {
-            setTimeout(checkOrientation, 100);
-        });
-        
-        // Also check on resize (backup for devices without orientationchange)
-        window.addEventListener('resize', checkOrientation);
-        
-        // Initial check
-        setTimeout(checkOrientation, 500);
+        }
+    }
+    
+    updateFullscreenButton(btn) {
+        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+        if (isFullscreen) {
+            btn.classList.add('is-fullscreen');
+            btn.textContent = '⛶';
+        } else {
+            btn.classList.remove('is-fullscreen');
+            btn.textContent = '⛶';
+        }
     }
     
     loadZone(zoneId, entryPortalType = null) {
