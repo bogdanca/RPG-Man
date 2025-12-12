@@ -230,9 +230,15 @@ class Game {
                 font-size: 18px;
                 background: rgba(0, 0, 0, 0.7);
                 z-index: 1001;
+                animation: pulse-fullscreen 2s ease-in-out infinite;
             }
             .mobile-fullscreen.is-fullscreen {
                 background: rgba(255, 215, 0, 0.3);
+                animation: none;
+            }
+            @keyframes pulse-fullscreen {
+                0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+                50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.9); }
             }
             
             @media (min-width: 900px) {
@@ -286,7 +292,17 @@ class Game {
         
         // Handle fullscreen toggle button
         const fullscreenBtn = document.getElementById('mobile-fullscreen-btn');
-        fullscreenBtn.addEventListener('click', () => {
+        
+        // Use touchend for mobile (more reliable than click)
+        fullscreenBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.toggleFullscreen(fullscreenBtn);
+        }, { passive: false });
+        
+        // Also support click for hybrid devices
+        fullscreenBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             this.toggleFullscreen(fullscreenBtn);
         });
         
@@ -298,12 +314,6 @@ class Game {
             this.updateFullscreenButton(fullscreenBtn);
         });
         
-        // Prompt user to go fullscreen on first load
-        setTimeout(() => {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                this.toggleFullscreen(fullscreenBtn);
-            }
-        }, 1000);
     }
     
     toggleFullscreen(btn) {
