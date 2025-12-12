@@ -2,31 +2,53 @@
 
 A lightweight, indie platformer RPG built with vanilla JavaScript and HTML5 Canvas.
 
+## 🌐 Browser Compatibility
+
+| Browser | Desktop | Mobile |
+|---------|---------|--------|
+| Chrome | ✅ Full Support | ✅ Full Support |
+| Firefox | ✅ Full Support | ✅ Full Support |
+| Safari | ✅ Full Support | ✅ Full Support |
+| Edge | ✅ Full Support | ✅ Full Support |
+
+**Requirements:**
+- Modern browser with HTML5 Canvas support
+- JavaScript enabled
+- LocalStorage enabled (for save data)
+
 ## 🎮 How to Play
 
 1. Open `index.html` in any modern web browser
-2. Use keyboard controls to play
-3. Your progress is automatically saved to localStorage
+2. **Desktop**: Hold any key + click to start
+3. **Mobile**: Tap anywhere to start
+4. Your progress is automatically saved to localStorage
 
 ## ⌨️ Controls
 
-### Keyboard
+### Desktop - Keyboard
 - **WASD / Arrow Keys** - Move left/right
 - **SPACE / W / Up Arrow** - Jump (press twice for double jump)
 - **C** - Inventory Panel (view/manage equipment & items)
 - **U** - Upgrade Stats Panel (spend coins to boost stats)
 - **B** - Blacksmith Panel (craft new gear with materials)
-- **Q** - Quests Panel (track and complete quests)
+- **L** - Quests Panel (track and complete quests)
+- **Q** - Thunderstrike Spell (unlocked after defeating Phantom Dragon)
 - **ESC** - Close current panel
-- **1-4** - Switch between zones (if level requirement met)
+- **1-4** - Use potions from belt
 
-### Mouse
+### Desktop - Mouse
 - **Left Click** - Attack
-- **Right Click (Hold)** - Block (reduces damage by 50%)
+- **Right Click (Hold)** - Block (100% damage reduction)
 - **Click Panel Icons** - Open/close panels (bottom right corner)
 - **Click Outside Panel** - Close current panel
 - **X Button** - Close panel
 - **Drag & Drop** - Move items in inventory, equip items from bag to equipment slots
+
+### Mobile - Touch Controls
+- **D-Pad (Left side)** - Move left/right, Jump
+- **⚔️ Button** - Attack
+- **🛡️ Button** - Block
+- **E Button** - Interact with portals/NPCs
 
 ## 🎯 Gameplay Loop
 

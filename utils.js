@@ -1,5 +1,44 @@
 // Utility Functions
 
+// Safe localStorage wrapper for private browsing mode
+const SafeStorage = {
+    getItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            console.warn('localStorage not available:', e);
+            return null;
+        }
+    },
+    setItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+            return true;
+        } catch (e) {
+            console.warn('localStorage not available:', e);
+            return false;
+        }
+    },
+    removeItem(key) {
+        try {
+            localStorage.removeItem(key);
+            return true;
+        } catch (e) {
+            console.warn('localStorage not available:', e);
+            return false;
+        }
+    },
+    clear() {
+        try {
+            localStorage.clear();
+            return true;
+        } catch (e) {
+            console.warn('localStorage not available:', e);
+            return false;
+        }
+    }
+};
+
 function checkCollision(rect1, rect2) {
     return rect1.x < rect2.x + rect2.width &&
            rect1.x + rect1.width > rect2.x &&
@@ -27,7 +66,7 @@ function lerp(start, end, t) {
 class SaveManager {
     static save(data) {
         try {
-            localStorage.setItem('grindQuestSave', JSON.stringify(data));
+            SafeStorage.setItem('grindQuestSave', JSON.stringify(data));
             return true;
         } catch (e) {
             console.error('Failed to save:', e);
@@ -37,7 +76,7 @@ class SaveManager {
 
     static load() {
         try {
-            const data = localStorage.getItem('grindQuestSave');
+            const data = SafeStorage.getItem('grindQuestSave');
             return data ? JSON.parse(data) : null;
         } catch (e) {
             console.error('Failed to load:', e);
@@ -46,6 +85,6 @@ class SaveManager {
     }
 
     static clear() {
-        localStorage.removeItem('grindQuestSave');
+        SafeStorage.removeItem('grindQuestSave');
     }
 }

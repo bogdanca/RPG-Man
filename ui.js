@@ -63,7 +63,7 @@ class GameUI {
         
         // Potion belt system
         this.potionBeltSlots = [null, null, null, null]; // 4 slots for potions
-        this.potionBeltHintShown = localStorage.getItem('potionBeltHintShown') === 'true';
+        this.potionBeltHintShown = SafeStorage.getItem('potionBeltHintShown') === 'true';
         this.potionBeltHint = document.getElementById('potion-belt-hint');
         this.activePotionsDisplay = document.getElementById('active-potions-display');
         
@@ -79,8 +79,8 @@ class GameUI {
         
         // Feature hints system
         this.hintsShown = {
-            quests: localStorage.getItem('hintQuestsShown') === 'true',
-            upgrades: localStorage.getItem('hintUpgradesShown') === 'true'
+            quests: SafeStorage.getItem('hintQuestsShown') === 'true',
+            upgrades: SafeStorage.getItem('hintUpgradesShown') === 'true'
         };
         this.setupFeatureHints();
         
@@ -282,12 +282,12 @@ class GameUI {
             // Remove feature hints when panels are opened
             if (panelId === 'quests-panel' && !this.hintsShown.quests) {
                 this.hintsShown.quests = true;
-                localStorage.setItem('hintQuestsShown', 'true');
+                SafeStorage.setItem('hintQuestsShown', 'true');
                 this.updateFeatureHints();
             }
             if (panelId === 'upgrade-panel' && !this.hintsShown.upgrades) {
                 this.hintsShown.upgrades = true;
-                localStorage.setItem('hintUpgradesShown', 'true');
+                SafeStorage.setItem('hintUpgradesShown', 'true');
                 this.updateFeatureHints();
             }
             
@@ -835,7 +835,7 @@ class GameUI {
         
         this.potionBeltHint.classList.remove('hidden');
         this.potionBeltHintShown = true;
-        localStorage.setItem('potionBeltHintShown', 'true');
+        SafeStorage.setItem('potionBeltHintShown', 'true');
     }
     
     hidePotionBeltHint() {
@@ -1882,8 +1882,8 @@ class GameUI {
             );
             
             if (confirmed) {
-                // Clear all localStorage
-                localStorage.clear();
+                // Clear all SafeStorage
+                SafeStorage.clear();
                 
                 // Reset debug mode flag
                 this.debugMode = false;
@@ -2120,7 +2120,7 @@ class GameUI {
         const okBtn = document.getElementById('tutorial-ok-btn');
         
         // Check if tutorial has been shown before
-        const tutorialShown = localStorage.getItem('tutorialShown');
+        const tutorialShown = SafeStorage.getItem('tutorialShown');
         
         if (!tutorialShown) {
             // First time playing - show tutorial
@@ -2130,7 +2130,7 @@ class GameUI {
             okBtn.addEventListener('click', () => {
                 tutorialPopup.classList.add('hidden');
                 this.game.paused = false;
-                localStorage.setItem('tutorialShown', 'true');
+                SafeStorage.setItem('tutorialShown', 'true');
                 this.showNotification('Good luck, adventurer!', 'level-up');
             });
         }

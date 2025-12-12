@@ -349,7 +349,7 @@ class Player {
         if (window.game && window.game.currentZone === 'deep_mines_boss') {
             // Mark Deep Mines as failed for today
             const today = new Date().toDateString();
-            localStorage.setItem('deepMinesFailedDate', today);
+            SafeStorage.setItem('deepMinesFailedDate', today);
             
             if (window.gameUI) {
                 window.gameUI.hideDeathScreen();
@@ -697,8 +697,38 @@ class Player {
         const headColor = '#f0c090'; // Skin tone
         const hairColor = '#8B4513'; // Brown hair
         const eyeColor = '#000000';
-        const armorColor = '#5A6B7C'; // Steel blue armor
-        const armorHighlight = '#7A8B9C';
+        
+        // Armor colors based on equipped armor tier
+        let armorColor, armorHighlight, armorDark;
+        const armorTier = this.gear.armor || 0;
+        
+        if (armorTier >= 4) {
+            // Diamond Armor - cyan/light blue
+            armorColor = '#5CE1E6';
+            armorHighlight = '#A0F0F0';
+            armorDark = '#3BA8AD';
+        } else if (armorTier >= 3) {
+            // Iron Armor - silver/gray
+            armorColor = '#A8A8A8';
+            armorHighlight = '#D0D0D0';
+            armorDark = '#707070';
+        } else if (armorTier >= 2) {
+            // Copper Armor - copper/orange-brown
+            armorColor = '#B87333';
+            armorHighlight = '#DA8A4A';
+            armorDark = '#8B5A2B';
+        } else if (armorTier >= 1) {
+            // Leather Armor - brown
+            armorColor = '#8B5A2B';
+            armorHighlight = '#A67C52';
+            armorDark = '#5C3D1E';
+        } else {
+            // No Armor - basic cloth/shirt
+            armorColor = '#5A6B7C';
+            armorHighlight = '#7A8B9C';
+            armorDark = '#3A4B5C';
+        }
+        
         const armColor = '#f0c090';
         const pantsColor = '#4A4A4A';
         const bootColor = '#2C1810';
@@ -732,18 +762,48 @@ class Player {
         pixel(2, 4, armorHighlight);
         pixel(3, 4, armorHighlight);
         
+        // Add shoulder pads for Copper+ armor (tier 2+)
+        if (armorTier >= 2) {
+            pixel(0, 3, armorColor);
+            pixel(5, 3, armorColor);
+            pixel(0, 4, armorDark);
+            pixel(5, 4, armorDark);
+        }
+        
+        // Add chest plate detail for Iron+ armor (tier 3+)
+        if (armorTier >= 3) {
+            pixel(2, 5, armorHighlight);
+            pixel(3, 5, armorHighlight);
+        }
+        
+        // Add gem/diamond detail for Diamond armor (tier 4)
+        if (armorTier >= 4) {
+            pixel(2, 5, '#FFFFFF'); // White gem center
+            pixel(3, 5, '#FFFFFF');
+        }
+        
         // Arms (animated for attacking)
         const armOffset = this.isAttacking ? 1 : 0;
         
-        // Left arm (shield arm)
-        pixel(0, 4, armColor);
-        pixel(0, 5, armColor);
-        pixel(0, 6, armColor);
+        // Left arm (shield arm) - with armor sleeve for tier 2+
+        if (armorTier >= 2) {
+            pixel(0, 4, armorColor);
+            pixel(0, 5, armorDark);
+        } else {
+            pixel(0, 4, armColor);
+            pixel(0, 5, armColor);
+        }
+        pixel(0, 6, armColor); // Hand always skin
         
-        // Right arm (sword arm) - extends during attack
-        pixel(5, 4 + armOffset, armColor);
-        pixel(5, 5 + armOffset, armColor);
-        pixel(5, 6 + armOffset, armColor);
+        // Right arm (sword arm) - with armor sleeve for tier 2+
+        if (armorTier >= 2) {
+            pixel(5, 4 + armOffset, armorColor);
+            pixel(5, 5 + armOffset, armorDark);
+        } else {
+            pixel(5, 4 + armOffset, armColor);
+            pixel(5, 5 + armOffset, armColor);
+        }
+        pixel(5, 6 + armOffset, armColor); // Hand always skin
         
         // Belt (row 6)
         for (let i = 1; i < 5; i++) {
@@ -1087,7 +1147,7 @@ class Player {
     }
     
     loadSpellUnlockState() {
-        const unlocked = localStorage.getItem('thunderstrikeUnlocked') === 'true';
+        const unlocked = SafeStorage.getItem('thunderstrikeUnlocked') === 'true';
         this.spells.thunderstrike.unlocked = unlocked;
         this.updateSpellSlotUI();
     }
@@ -1095,7 +1155,7 @@ class Player {
     unlockThunderstrike() {
         if (!this.spells.thunderstrike.unlocked) {
             this.spells.thunderstrike.unlocked = true;
-            localStorage.setItem('thunderstrikeUnlocked', 'true');
+            SafeStorage.setItem('thunderstrikeUnlocked', 'true');
             this.updateSpellSlotUI();
             
             // Play unlock animation

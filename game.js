@@ -137,6 +137,137 @@ class Game {
         setInterval(() => {
             this.saveGame();
         }, 10000);
+        
+        // Mobile touch controls
+        this.setupMobileControls();
+    }
+    
+    setupMobileControls() {
+        // Detect mobile device
+        const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        if (!isMobile) return;
+        
+        // Create mobile control overlay
+        const mobileControls = document.createElement('div');
+        mobileControls.id = 'mobile-controls';
+        mobileControls.innerHTML = `
+            <div class="mobile-dpad">
+                <button class="mobile-btn mobile-up" data-key="ArrowUp">▲</button>
+                <div class="mobile-dpad-row">
+                    <button class="mobile-btn mobile-left" data-key="ArrowLeft">◀</button>
+                    <button class="mobile-btn mobile-right" data-key="ArrowRight">▶</button>
+                </div>
+            </div>
+            <div class="mobile-actions">
+                <button class="mobile-btn mobile-attack" data-action="attack">⚔️</button>
+                <button class="mobile-btn mobile-block" data-action="block">🛡️</button>
+                <button class="mobile-btn mobile-interact" data-key="e">E</button>
+            </div>
+        `;
+        document.body.appendChild(mobileControls);
+        
+        // Add mobile control styles
+        const style = document.createElement('style');
+        style.textContent = `
+            #mobile-controls {
+                display: flex;
+                justify-content: space-between;
+                position: fixed;
+                bottom: 60px;
+                left: 10px;
+                right: 10px;
+                z-index: 1000;
+                pointer-events: none;
+            }
+            .mobile-dpad, .mobile-actions {
+                pointer-events: auto;
+            }
+            .mobile-dpad {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+            }
+            .mobile-dpad-row {
+                display: flex;
+                gap: 40px;
+            }
+            .mobile-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                align-items: center;
+            }
+            .mobile-btn {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                border: 2px solid rgba(255, 215, 0, 0.6);
+                background: rgba(0, 0, 0, 0.6);
+                color: #FFD700;
+                font-size: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                touch-action: manipulation;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+            .mobile-btn:active {
+                background: rgba(255, 215, 0, 0.3);
+                transform: scale(0.95);
+            }
+            .mobile-attack { background: rgba(220, 50, 50, 0.5); }
+            .mobile-block { background: rgba(50, 100, 200, 0.5); }
+            .mobile-interact { font-size: 16px; font-weight: bold; }
+            
+            @media (min-width: 900px) {
+                #mobile-controls { display: none; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Handle touch events for movement buttons
+        const movementBtns = mobileControls.querySelectorAll('[data-key]');
+        movementBtns.forEach(btn => {
+            const key = btn.dataset.key;
+            
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.keys[key] = true;
+            }, { passive: false });
+            
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.keys[key] = false;
+            }, { passive: false });
+            
+            btn.addEventListener('touchcancel', (e) => {
+                this.keys[key] = false;
+            });
+        });
+        
+        // Handle attack button
+        const attackBtn = mobileControls.querySelector('[data-action="attack"]');
+        attackBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.keys.mouseAttack = true;
+        }, { passive: false });
+        attackBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.keys.mouseAttack = false;
+        }, { passive: false });
+        
+        // Handle block button
+        const blockBtn = mobileControls.querySelector('[data-action="block"]');
+        blockBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.keys.mouseBlock = true;
+        }, { passive: false });
+        blockBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.keys.mouseBlock = false;
+        }, { passive: false });
     }
     
     loadZone(zoneId, entryPortalType = null) {
@@ -768,12 +899,6 @@ class Game {
 
         // Cap delta time to prevent huge jumps
         if (this.deltaTime > 100) this.deltaTime = 100;
-        
-        // Apply game speed multiplier based on player speed stat
-        // Base speed is 4.0, scale game speed proportionally
-        const baseSpeed = 4.0;
-        const speedMultiplier = this.player.stats.speed / baseSpeed;
-        this.deltaTime *= speedMultiplier;
 
         this.update();
         this.draw();

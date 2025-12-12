@@ -1446,20 +1446,21 @@ body {
 
 .belt-keybind {
     position: absolute;
-    top: -4px;
-    right: -4px;
-    background: rgba(0, 0, 0, 0.85);
+    top: -8px;
+    right: -8px;
+    background: rgba(0, 0, 0, 0.9);
     color: #FFD700;
     font-weight: bold;
-    font-size: 8px;
-    width: 13px;
-    height: 13px;
+    font-size: 9px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
-    border: 1px solid #FFD700;
+    border: 2px solid #FFD700;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.6);
+    z-index: 5;
 }
 
 .belt-potion-icon {
@@ -1497,7 +1498,7 @@ body {
 .spell-slot {
     position: absolute;
     bottom: 4px;
-    left: calc(50% + 85px);
+    left: calc(50% - 120px);
     width: 36px;
     height: 36px;
     background: linear-gradient(135deg, rgba(30, 60, 120, 0.4), rgba(20, 40, 80, 0.3));
@@ -1509,7 +1510,7 @@ body {
     z-index: 50;
     cursor: pointer;
     transition: all 0.2s ease;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .spell-slot:hover:not(.locked):not(.on-cooldown) {

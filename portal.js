@@ -195,8 +195,8 @@ class Portal {
         const now = new Date();
         const currentHour = now.getHours();
         
-        // Check if failed today (stored in localStorage)
-        const failedDate = localStorage.getItem('deepMinesFailedDate');
+        // Check if failed today (stored in SafeStorage)
+        const failedDate = SafeStorage.getItem('deepMinesFailedDate');
         const today = now.toDateString();
         
         if (failedDate === today) {
@@ -214,7 +214,7 @@ class Portal {
     markFailed() {
         if (this.isTimeGated) {
             const today = new Date().toDateString();
-            localStorage.setItem('deepMinesFailedDate', today);
+            SafeStorage.setItem('deepMinesFailedDate', today);
             this.failedToday = true;
             this.isTimeOpen = false;
         }
