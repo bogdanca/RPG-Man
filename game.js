@@ -155,6 +155,7 @@ class Game {
                 <button class="mobile-btn mobile-up" data-key="ArrowUp">▲</button>
                 <div class="mobile-dpad-row">
                     <button class="mobile-btn mobile-left" data-key="ArrowLeft">◀</button>
+                    <button class="mobile-btn mobile-down" data-key="ArrowDown">▼</button>
                     <button class="mobile-btn mobile-right" data-key="ArrowRight">▶</button>
                 </div>
             </div>
@@ -173,7 +174,7 @@ class Game {
                 display: flex;
                 justify-content: space-between;
                 position: fixed;
-                bottom: 60px;
+                bottom: 120px;
                 left: 10px;
                 right: 10px;
                 z-index: 1000;
@@ -190,7 +191,7 @@ class Game {
             }
             .mobile-dpad-row {
                 display: flex;
-                gap: 40px;
+                gap: 10px;
             }
             .mobile-actions {
                 display: flex;
