@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -15,9 +16,11 @@
         });
     </script>
     <title>RPG Man</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%238B7355'/%3E%3Cstop offset='50%25' style='stop-color:%235D4037'/%3E%3Cstop offset='100%25' style='stop-color:%233E2723'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M16 2 L28 8 L28 18 L16 30 L4 18 L4 8 Z' fill='url(%23s)' stroke='%23FFD700' stroke-width='1.5'/%3E%3Cpath d='M16 8 L16 24 M13 11 L19 11 M14 24 L18 24' stroke='%23C0C0C0' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='11' r='2' fill='%23FFD700'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%238B7355'/%3E%3Cstop offset='50%25' style='stop-color:%235D4037'/%3E%3Cstop offset='100%25' style='stop-color:%233E2723'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M16 2 L28 8 L28 18 L16 30 L4 18 L4 8 Z' fill='url(%23s)' stroke='%23FFD700' stroke-width='1.5'/%3E%3Cpath d='M16 8 L16 24 M13 11 L19 11 M14 24 L18 24' stroke='%23C0C0C0' stroke-width='2' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='11' r='2' fill='%23FFD700'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <!-- Title Screen -->
     <div id="title-screen">
@@ -39,16 +42,18 @@
                                 <stop offset="100%" style="stop-color:#616161;stop-opacity:1" />
                             </linearGradient>
                         </defs>
-                        <path d="M40 5 L70 20 L70 50 L40 75 L10 50 L10 20 Z" fill="url(#shieldGrad)" stroke="#FFD700" stroke-width="2"/>
+                        <path d="M40 5 L70 20 L70 50 L40 75 L10 50 L10 20 Z" fill="url(#shieldGrad)" stroke="#FFD700"
+                            stroke-width="2" />
                         <!-- Crossed swords -->
-                        <rect x="25" y="15" width="4" height="40" fill="url(#swordGrad)" transform="rotate(-45 40 40)"/>
-                        <rect x="51" y="15" width="4" height="40" fill="url(#swordGrad)" transform="rotate(45 40 40)"/>
-                        <circle cx="28" cy="28" r="5" fill="#FFD700"/>
-                        <circle cx="52" cy="28" r="5" fill="#FFD700"/>
-                        <polygon points="40,40 45,50 40,48 35,50" fill="#C0392B"/>
+                        <rect x="25" y="15" width="4" height="40" fill="url(#swordGrad)"
+                            transform="rotate(-45 40 40)" />
+                        <rect x="51" y="15" width="4" height="40" fill="url(#swordGrad)" transform="rotate(45 40 40)" />
+                        <circle cx="28" cy="28" r="5" fill="#FFD700" />
+                        <circle cx="52" cy="28" r="5" fill="#FFD700" />
+                        <polygon points="40,40 45,50 40,48 35,50" fill="#C0392B" />
                     </svg>
                 </div>
-                
+
                 <!-- Main logo text -->
                 <div class="game-logo">
                     <div class="logo-text-wrapper">
@@ -61,35 +66,35 @@
                         <div class="beta-label">BETA</div>
                     </div>
                 </div>
-                
+
                 <!-- Decorative side elements -->
                 <div class="side-ornament left">
                     <svg width="60" height="120" viewBox="0 0 60 120" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M50 60 Q30 30, 10 60 Q30 90, 50 60" fill="none" stroke="#8B7355" stroke-width="2"/>
-                        <circle cx="10" cy="60" r="4" fill="#FFD700"/>
-                        <circle cx="50" cy="60" r="4" fill="#FFD700"/>
-                        <path d="M30 20 L30 100" stroke="#8B7355" stroke-width="1.5"/>
+                        <path d="M50 60 Q30 30, 10 60 Q30 90, 50 60" fill="none" stroke="#8B7355" stroke-width="2" />
+                        <circle cx="10" cy="60" r="4" fill="#FFD700" />
+                        <circle cx="50" cy="60" r="4" fill="#FFD700" />
+                        <path d="M30 20 L30 100" stroke="#8B7355" stroke-width="1.5" />
                     </svg>
                 </div>
                 <div class="side-ornament right">
                     <svg width="60" height="120" viewBox="0 0 60 120" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M10 60 Q30 30, 50 60 Q30 90, 10 60" fill="none" stroke="#8B7355" stroke-width="2"/>
-                        <circle cx="50" cy="60" r="4" fill="#FFD700"/>
-                        <circle cx="10" cy="60" r="4" fill="#FFD700"/>
-                        <path d="M30 20 L30 100" stroke="#8B7355" stroke-width="1.5"/>
+                        <path d="M10 60 Q30 30, 50 60 Q30 90, 10 60" fill="none" stroke="#8B7355" stroke-width="2" />
+                        <circle cx="50" cy="60" r="4" fill="#FFD700" />
+                        <circle cx="10" cy="60" r="4" fill="#FFD700" />
+                        <path d="M30 20 L30 100" stroke="#8B7355" stroke-width="1.5" />
                     </svg>
                 </div>
-                
+
             </div>
-            <div id="subtitle">Press any key or click to start</div>
+
         </div>
         <!-- Copyright -->
         <div class="copyright">© Reko Tech 2025</div>
     </div>
-    
+
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        
+
         <!-- UI Overlays -->
         <div id="ui-overlay">
             <!-- Top HUD -->
@@ -125,7 +130,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Music Controls (Top Right) -->
             <div id="music-controls" class="music-widget">
                 <button id="music-toggle" class="music-btn" title="Toggle Music">
@@ -246,7 +251,8 @@
                     <div id="blacksmith-sell-content" class="blacksmith-content">
                         <div class="sell-info">
                             <div>👜 SELLING FROM YOUR BAG INVENTORY</div>
-                            <div style="font-size: 12px; margin-top: 5px; opacity: 0.9;">Click any item below to sell it for 30% of its crafting value</div>
+                            <div style="font-size: 12px; margin-top: 5px; opacity: 0.9;">Click any item below to sell it
+                                for 30% of its crafting value</div>
                         </div>
                         <div id="sell-items"></div>
                     </div>
@@ -276,21 +282,23 @@
                         <button class="blacksmith-tab active" data-tab="potion-buy">Buy</button>
                         <button class="blacksmith-tab" data-tab="potion-sell">Sell</button>
                     </div>
-                    
+
                     <!-- Buy Tab Content -->
                     <div id="potion-buy-content" class="blacksmith-tab-content active">
                         <div class="shop-info">
                             <div>🧪 POTION SHOP</div>
-                            <div style="font-size: 12px; margin-top: 5px; opacity: 0.9;">Buy potions and elixirs to aid your adventure</div>
+                            <div style="font-size: 12px; margin-top: 5px; opacity: 0.9;">Buy potions and elixirs to aid
+                                your adventure</div>
                         </div>
                         <div id="potion-shop-items"></div>
                     </div>
-                    
+
                     <!-- Sell Tab Content -->
                     <div id="potion-sell-content" class="blacksmith-tab-content">
                         <div class="sell-info-banner">
                             <div>💰 SELL POTIONS</div>
-                            <div style="font-size: 12px; margin-top: 5px;">Sell potions from your bag for <strong>30% of their value</strong></div>
+                            <div style="font-size: 12px; margin-top: 5px;">Sell potions from your bag for <strong>30% of
+                                    their value</strong></div>
                         </div>
                         <div id="potion-sell-items"></div>
                     </div>
@@ -309,14 +317,14 @@
                 <div class="tooltip-type" id="tooltip-type"></div>
                 <div class="tooltip-stats" id="tooltip-stats"></div>
             </div>
-            
+
             <!-- Death Screen -->
             <div id="death-screen" class="death-screen hidden">
                 <div class="death-message">YOU DIED</div>
                 <div class="death-penalty">You lose 20% Gold and Experience</div>
                 <button id="try-again-btn" class="try-again-btn">Try Again</button>
             </div>
-            
+
             <!-- Potion Belt -->
             <div id="potion-belt" class="potion-belt">
                 <div class="potion-belt-slot" data-slot="0">
@@ -332,7 +340,7 @@
                     <div class="belt-keybind">4</div>
                 </div>
             </div>
-            
+
             <!-- Spell Slot (next to potion belt) -->
             <div id="spell-slot" class="spell-slot locked" title="Thunderstrike (Q) - Locked">
                 <div class="spell-keybind">Q</div>
@@ -341,12 +349,13 @@
                 <div class="spell-cooldown-text"></div>
                 <div class="spell-lock-overlay">🔒</div>
             </div>
-            
+
             <!-- Potion Belt Tutorial Hint -->
             <div id="potion-belt-hint" class="potion-belt-hint hidden">
-                <span class="hint-arrow">↓</span><span class="hint-text">Drag potions here</span><button class="hint-close">OK</button>
+                <span class="hint-arrow">↓</span><span class="hint-text">Drag potions here</span><button
+                    class="hint-close">OK</button>
             </div>
-            
+
             <!-- Bottom Right Panel Icons -->
             <div class="panel-icons">
                 <button class="panel-icon" data-panel="character-panel" title="Inventory (C)">
@@ -359,7 +368,7 @@
                     <div class="icon">🔮</div>
                     <div class="label">Upgrade</div>
                 </button>
-<button class="panel-icon" data-panel="quests-panel" title="Quests (L)">
+                <button class="panel-icon" data-panel="quests-panel" title="Quests (L)">
                     <div class="keybind">L</div>
                     <div class="icon">📜</div>
                     <div class="label">Quests</div>
@@ -395,7 +404,7 @@
                             <span class="btn-label">Kill Player Character</span>
                         </button>
                         <p class="debug-hint">Test the death system and penalties</p>
-                        
+
                         <button id="reset-game-btn" class="debug-action-btn danger-btn">
                             <span class="btn-icon">⚠️</span>
                             <span class="btn-label">Reset Game & Clear Saves</span>
@@ -501,7 +510,8 @@
                             </div>
                             <div class="control-item">
                                 <div class="key-display">Q</div>
-                                <div class="control-desc">⚡ Thunderstrike - Lightning spell (unlocked after Deep Mines)</div>
+                                <div class="control-desc">⚡ Thunderstrike - Lightning spell (unlocked after Deep Mines)
+                                </div>
                             </div>
                             <div class="control-item">
                                 <div class="key-display">L</div>
@@ -539,39 +549,32 @@
     <script src="portal.js"></script>
     <script src="ui.js"></script>
     <script src="game.js"></script>
-    
+
     <script>
         // Title Screen Logic
         window.addEventListener('load', () => {
             const titleScreen = document.getElementById('title-screen');
-            let titleDismissed = false;
-            let keyPressed = false;
-            
-            // Detect if mobile/touch device
-            const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            
-            function dismissTitle() {
-                if (titleDismissed) return;
-                titleDismissed = true;
-                
+            const subtitle = document.getElementById('subtitle');
+            if (subtitle) subtitle.style.display = 'none'; // Ensure text is gone
+
+            // Pause the game initially
+            const checkGameInterval = setInterval(() => {
+                if (window.game) {
+                    window.game.paused = true;
+                    clearInterval(checkGameInterval);
+                }
+            }, 50);
+
+            // Auto-dismiss after 4 seconds
+            setTimeout(() => {
                 titleScreen.classList.add('fade-out');
                 setTimeout(() => {
                     titleScreen.style.display = 'none';
+                    if (window.game) window.game.paused = false;
                 }, 500);
-            }
-            
-            if (isMobile) {
-                // Mobile: tap to dismiss
-                document.addEventListener('touchstart', dismissTitle, { once: true });
-            } else {
-                // Desktop: require key + mouse click
-                document.addEventListener('keydown', () => { keyPressed = true; });
-                document.addEventListener('keyup', () => { keyPressed = false; });
-                document.addEventListener('click', () => {
-                    if (keyPressed) dismissTitle();
-                });
-            }
+            }, 4000);
         });
     </script>
 </body>
+
 </html>

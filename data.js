@@ -11,9 +11,10 @@ const GAME_CONFIG = {
 const PLAYER_CONFIG = {
     width: 24,
     height: 32,
-    baseMovementSpeed: 4, // Fixed base movement speed (not affected by stats)
-    jumpPower: 12,
-    doubleJumpPower: 10,
+    baseMovementSpeed: 2.0, // Reduced from 4 for better control
+    gravity: 0.4, // Lower gravity for slower, floatier jumps (Global is 0.6)
+    jumpPower: 10, // Adjusted for lower gravity (was 12) to maintain ~4 tile height
+    doubleJumpPower: 8, // Adjusted for lower gravity (was 10)
     attackCooldown: 350,
     attackRange: 65,
     baseStats: {
@@ -43,7 +44,7 @@ const ENEMY_TYPES = {
         jumpInterval: 2000,
         jumpPower: -8
     },
-    
+
     // Level 4-7 enemies
     green_slime_strong: {
         name: 'Cave Slime',
@@ -61,7 +62,7 @@ const ENEMY_TYPES = {
         jumpInterval: 1800,
         jumpPower: -9
     },
-    
+
     cave_bat: {
         name: 'Cave Bat',
         width: 28,
@@ -76,7 +77,7 @@ const ENEMY_TYPES = {
         color: '#9b59b6',
         behavior: 'fly'
     },
-    
+
     // Level 7-12 enemies
     cave_bat_strong: {
         name: 'Dire Bat',
@@ -92,7 +93,7 @@ const ENEMY_TYPES = {
         color: '#8e44ad',
         behavior: 'fly'
     },
-    
+
     red_slime: {
         name: 'Fire Slime',
         width: 34,
@@ -113,7 +114,7 @@ const ENEMY_TYPES = {
         projectileSpeed: 3,
         projectileColor: '#e74c3c'
     },
-    
+
     // Boss
     slime_king: {
         name: 'Slime King',
@@ -135,7 +136,7 @@ const ENEMY_TYPES = {
         projectileSpeed: 4,
         projectileColor: '#1abc9c'
     },
-    
+
     // Deep Mines Boss - Phantom Dragon (Time-gated)
     phantom_dragon: {
         name: 'Phantom Dragon',
@@ -179,7 +180,7 @@ const ZONES = [
             { x: 595, y: 340, label: 'Crystal Depths', targetDungeon: 'slime_caves', locked: true }
         ]
     },
-    
+
     // Slime Caves Dungeon - Level 1 (Levels 1-4)
     {
         id: 'slime_caves_1',
@@ -197,7 +198,7 @@ const ZONES = [
         enemyCount: { min: 6, max: 10 },
         xpRequired: 480
     },
-    
+
     // Slime Caves Dungeon - Level 2 (Levels 4-7)
     {
         id: 'slime_caves_2',
@@ -216,7 +217,7 @@ const ZONES = [
         enemyCount: { min: 7, max: 12 },
         xpRequired: 1600
     },
-    
+
     // Slime Caves Dungeon - Level 3 (Levels 7-12)
     {
         id: 'slime_caves_3',
@@ -235,7 +236,7 @@ const ZONES = [
         enemyCount: { min: 6, max: 10 },
         xpRequired: 8200
     },
-    
+
     // Slime Caves Dungeon - Boss (Level 12)
     {
         id: 'slime_caves_boss',
@@ -261,7 +262,7 @@ const ZONES = [
         xpRequired: 2000,
         exitToHub: true
     },
-    
+
     // Deep Mines - Time-gated dungeon (opens at 11:00 local time)
     {
         id: 'deep_mines_boss',
