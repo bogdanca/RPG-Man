@@ -195,7 +195,7 @@ class Player {
                 const playerBottom = this.y + this.height;
                 const playerBottomPrev = playerBottom - this.vy;
 
-                if (playerBottomPrev <= platform.y + 5) {
+                if (playerBottomPrev <= platform.y + 20) {
                     // Check if this is the ground platform (y >= 500) or a regular platform
                     const isGroundPlatform = platform.y >= 500;
 
