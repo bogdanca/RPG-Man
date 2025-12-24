@@ -11,10 +11,10 @@ const GAME_CONFIG = {
 const PLAYER_CONFIG = {
     width: 24,
     height: 32,
-    baseMovementSpeed: 2.0, // Reduced from 4 for better control
-    gravity: 0.4, // Lower gravity for slower, floatier jumps (Global is 0.6)
-    jumpPower: 10, // Adjusted for lower gravity (was 12) to maintain ~4 tile height
-    doubleJumpPower: 8, // Adjusted for lower gravity (was 10)
+    baseMovementSpeed: 1.0, // Reduced to 1.0 (0.5x speed)
+    gravity: 0.1, // Reduced to 0.1 (0.25x gravity) to maintain jump height with half power
+    jumpPower: 5, // Reduced to 5 (0.5x power)
+    doubleJumpPower: 4, // Reduced to 4 (0.5x power)
     attackCooldown: 350,
     attackRange: 65,
     baseStats: {
@@ -175,7 +175,7 @@ const ZONES = [
         platformColor: '#4a3a2a',
         procedural: false,
         portals: [
-            { x: 145, y: 340, label: 'Deep Mines', targetDungeon: 'deep_mines', locked: false, isTimeGated: true, openHour: 11 },
+            { x: 145, y: 340, label: 'Deep Mines', targetDungeon: 'deep_mines', locked: false, isTimeGated: true, openHour: 23 },
             { x: 370, y: 300, label: 'Slime Caves', targetDungeon: 'slime_caves', locked: false },
             { x: 595, y: 340, label: 'Crystal Depths', targetDungeon: 'slime_caves', locked: true }
         ]
@@ -273,7 +273,7 @@ const ZONES = [
         type: 'dungeon',
         isBoss: true,
         isTimeGated: true,
-        openHour: 11, // Opens at 11:00 AM local time
+        openHour: 23, // Opens at 23:00 local time
         procedural: false,
         backgroundColor: '#0a0a15',
         platformColor: '#1a1a2e',

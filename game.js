@@ -71,9 +71,7 @@ class Game {
             if (e.key === 'u' || e.key === 'U') {
                 this.ui.togglePanel('upgrade-panel');
             }
-            if (e.key === 'b' || e.key === 'B') {
-                this.ui.togglePanel('blacksmith-panel');
-            }
+
             if (e.key === 'l' || e.key === 'L') {
                 this.ui.togglePanel('quests-panel');
             }
@@ -537,6 +535,18 @@ class Game {
         for (let portal of this.portals) {
             portal.update(this.deltaTime, this.player);
             if (portal.checkInteraction(this.player, this.keys['e'] || this.keys['E'])) {
+
+                // Time-lock check for Crystal Depths
+                if (portal.label === 'Crystal Depths') {
+                    const currentHour = new Date().getHours();
+                    if (currentHour !== 23) {
+                        this.ui.showNotification('Locked until 23:00', 'damage');
+                        this.keys['e'] = false;
+                        this.keys['E'] = false;
+                        continue; // Skip loading zone
+                    }
+                }
+
                 this.loadZone(portal.targetZone, 'hub');
                 this.keys['e'] = false;
                 this.keys['E'] = false;
