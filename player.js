@@ -367,6 +367,11 @@ class Player {
     die() {
         this.hp = 0;
 
+        // Play 8-bit death sound
+        if (window.soundManager) {
+            window.soundManager.play('playerDeath');
+        }
+
         // Show death screen
         if (window.gameUI) {
             window.gameUI.showDeathScreen();

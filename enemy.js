@@ -644,9 +644,12 @@ class Enemy {
             ctx.globalAlpha = Math.min(1, progress * 2); // Fade in quickly
 
             // Apply scale from center
+            // We translate to center, scale, then must translate back by the CENTER coordinates (not just dimensions)
+            // because we are drawing in world coordinates later.
+            // Transform: Translate(C) * Scale(S) * Translate(-C)
             ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
             ctx.scale(scale, scale);
-            ctx.translate(-this.width / 2, -this.height / 2);
+            ctx.translate(-(this.x + this.width / 2), -(this.y + this.height / 2));
 
             // Draw flash overlay
             // ctx.fillStyle = `rgba(255, 255, 255, ${1 - progress})`; // Flash fades out
