@@ -261,9 +261,38 @@ class Player {
             window.soundManager.play('swordSwing');
         }
 
-        // Determine attack direction from mouse position
-        if (this.mouseX !== undefined) {
-            const playerCenterX = this.x + this.width / 2;
+        // Auto-aim logic
+        let closestEnemy = null;
+        let minDistance = Infinity;
+        const autoAimRange = 150; // Pixels
+        const playerCenterX = this.x + this.width / 2;
+        const playerCenterY = this.y + this.height / 2;
+
+        for (let enemy of enemies) {
+            if (!enemy.alive) continue;
+
+            const enemyCenterX = enemy.x + enemy.width / 2;
+            const enemyCenterY = enemy.y + enemy.height / 2;
+
+            const dx = enemyCenterX - playerCenterX;
+            const dy = enemyCenterY - playerCenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestEnemy = enemy;
+            }
+        }
+
+        // Determine attack direction preference
+        // 1. Closest enemy in range (Auto-aim)
+        // 2. Mouse position
+        // 3. Current facing direction
+
+        if (closestEnemy && minDistance <= autoAimRange) {
+            const enemyCenterX = closestEnemy.x + closestEnemy.width / 2;
+            this.attackDirection = enemyCenterX >= playerCenterX ? 1 : -1;
+        } else if (this.mouseX !== undefined) {
             this.attackDirection = this.mouseX >= playerCenterX ? 1 : -1;
         } else {
             this.attackDirection = this.direction;
@@ -318,6 +347,11 @@ class Player {
         // Play damage sound
         if (window.soundManager) {
             window.soundManager.play('playerDamage');
+        }
+
+        // Cancel recall
+        if (window.game && window.game.recallSystem) {
+            window.game.recallSystem.onPlayerDamaged();
         }
 
         // Show damage
@@ -560,6 +594,83 @@ class Player {
         if (this.isLevelingUp) {
             this.drawLevelUpAnimation(ctx);
         }
+
+        // Draw recall animation
+        if (this.isRecalling) {
+            this.drawRecallAnimation(ctx);
+        }
+    }
+
+    drawRecallAnimation(ctx) {
+        const centerX = this.x + this.width / 2;
+        const centerY = this.y + this.height / 2;
+        const progress = this.recallProgress || 0;
+        const time = Date.now() / 50;
+
+        ctx.save();
+
+        // Portal base rings - expanding and contracting
+        const ringCount = 3;
+        for (let i = 0; i < ringCount; i++) {
+            const phase = (time * 0.1 + i / ringCount * Math.PI * 2) % (Math.PI * 2);
+            const size = 30 + Math.sin(phase) * 5;
+            const alpha = 0.5 + Math.sin(phase) * 0.3;
+
+            ctx.beginPath();
+            ctx.ellipse(centerX, this.y + this.height, size, size * 0.3, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(100, 180, 255, ${alpha})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Rising particles
+        const particleCount = 20;
+        for (let i = 0; i < particleCount; i++) {
+            // Pseudo-random particles based on time and index
+            const pTime = (time + i * 17.3) * 0.05;
+            const pPhase = pTime % 1;
+
+            // Spiral upward movement
+            const angle = pTime * 5 + i;
+            const radius = 25 * (1 - pPhase);
+            const height = pPhase * 80;
+
+            const px = centerX + Math.cos(angle) * radius;
+            const py = this.y + this.height - height;
+
+            const alpha = 1 - pPhase; // Fade out as they go up
+
+            ctx.fillStyle = `rgba(150, 220, 255, ${alpha})`;
+            ctx.fillRect(px, py, 2, 2);
+        }
+
+        // Channeling aura around player
+        const auraAlpha = 0.3 + Math.sin(time * 0.2) * 0.2;
+        ctx.fillStyle = `rgba(65, 105, 225, ${auraAlpha})`;
+        ctx.fillRect(this.x - 5, this.y - 5, this.width + 10, this.height + 10);
+
+        // Progress bar/circle above head
+        const barY = this.y - 15;
+        const barWidth = 40;
+        const barHeight = 4;
+
+        // Bar background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(centerX - barWidth / 2, barY, barWidth, barHeight);
+
+        // Bar fill
+        ctx.fillStyle = '#4169e1';
+        ctx.fillRect(centerX - barWidth / 2, barY, barWidth * progress, barHeight);
+
+        // Progress text
+        if (progress > 0) {
+            ctx.font = 'bold 10px monospace';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            // ctx.fillText(Math.ceil((1 - progress) * 2) + 's', centerX, barY - 5);
+        }
+
+        ctx.restore();
     }
 
     drawLevelUpAnimation(ctx) {
@@ -853,9 +964,17 @@ class Player {
     drawSword(ctx, angle, direction) {
         ctx.save();
 
-        // Hand position - aligned with arm/shoulder area (lower on body)
-        const handX = this.x + this.width - 4;
-        const handY = this.y + this.height * 0.5; // Middle of body, not head
+        // Hand position - aligned with arm pixel
+        // Body is 6 pixels wide. Right arm is at pixel index 5.
+        // Hand is at row index 6 (4-6 are arm/hand).
+        const pixelSize = 4; // Assuming 4x scaling or similar based on visual observation
+        // Actually, let's look at drawPixelBody to see scale. pixel(x, y, color) likely draws a rect.
+        // If pixel() uses this.width/6, then each pixel is ~width/6.
+
+        // Let's rely on relative positioning to width/height
+        // Hand is roughly at 80-90% width and 60% height
+        const handX = this.x + this.width * 0.9;
+        const handY = this.y + this.height * 0.65;
 
         // Attack recoil
         const attackRecoil = this.isAttacking ? Math.sin((1 - this.attackTime / PLAYER_CONFIG.attackCooldown) * Math.PI) * 2 : 0;
@@ -901,64 +1020,65 @@ class Player {
             pommelColor = '#8B5A2B';
         }
 
-        // Handle (grip) - always leather/dark wood
+        // Pivot is at the hand. Draw handle extending outwards/backwards slightly.
+        // Handle (grip) - centered on pivot (hand)
         ctx.fillStyle = '#4A3015';
-        ctx.fillRect(-10, -3, 8, 6);
+        ctx.fillRect(0, -3, 8, 6); // Handle starts at 0 (hand) and goes out
 
-        // Sword blade
+        // Sword blade starts after handle
         ctx.fillStyle = bladeColor;
-        ctx.fillRect(0, -2, 28, 4);
+        ctx.fillRect(8, -2, 28, 4); // Blade starts at 8
 
         // Blade highlight
         ctx.fillStyle = bladeHighlight;
-        ctx.fillRect(0, -2, 28, 1);
+        ctx.fillRect(8, -2, 28, 1);
 
         // Blade edge (darker)
         ctx.fillStyle = bladeEdge;
-        ctx.fillRect(0, 1, 28, 1);
+        ctx.fillRect(8, 1, 28, 1);
 
         // Sword tip (pointed)
         ctx.fillStyle = bladeColor;
         ctx.beginPath();
-        ctx.moveTo(28, -2);
-        ctx.lineTo(32, 0);
-        ctx.lineTo(28, 2);
+        ctx.moveTo(36, -2);
+        ctx.lineTo(40, 0);
+        ctx.lineTo(36, 2);
         ctx.fill();
 
         // Tip highlight/edge
         ctx.fillStyle = bladeHighlight;
         ctx.beginPath();
-        ctx.moveTo(28, -2);
-        ctx.lineTo(32, 0);
-        ctx.lineTo(28, -0.5);
+        ctx.moveTo(36, -2);
+        ctx.lineTo(40, 0);
+        ctx.lineTo(36, -0.5);
         ctx.fill();
 
         ctx.fillStyle = bladeEdge;
         ctx.beginPath();
-        ctx.moveTo(28, 2);
-        ctx.lineTo(32, 0);
-        ctx.lineTo(28, 1);
+        ctx.moveTo(36, 2);
+        ctx.lineTo(40, 0);
+        ctx.lineTo(36, 1);
         ctx.fill();
 
-        // Cross guard
+        // Cross guard (between handle and blade)
         ctx.fillStyle = guardColor;
-        ctx.fillRect(-2, -6, 4, 12);
+        ctx.fillRect(6, -6, 4, 12); // Shifted to be at connection point
 
         // Guard highlights
         ctx.fillStyle = guardHighlight;
-        ctx.fillRect(-2, -6, 4, 2);
-        ctx.fillRect(-2, 4, 4, 2); // Bottom highlight too
+        ctx.fillRect(6, -6, 4, 2);
+        ctx.fillRect(6, 4, 4, 2);
 
-        // Pommel
+        // Pommel (end of handle)
         ctx.fillStyle = pommelColor;
-        ctx.fillRect(-14, -4, 4, 8);
+        ctx.fillRect(-4, -4, 4, 8); // Shifted to end of handle
 
         // Diamond sword glow effect (Blue)
         if (weaponTier >= 3) {
             ctx.shadowColor = '#2E67F8';
             ctx.shadowBlur = 10;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.fillRect(0, -2, 30, 4); // Subtle glow overlay
+            ctx.fillRect(8, -2, 30, 4); // Subtle glow overlay
             ctx.shadowBlur = 0;
         }
 
@@ -966,24 +1086,26 @@ class Player {
     }
 
     drawShield(ctx) {
-        // Shield position at left arm
-        const shieldX = this.x - 6;
-        const shieldY = this.y + this.height * 0.4;
+        // Shield position at left arm (closer to body)
+        // Body width is this.width. Left arm is at pixel index 0.
+        const shieldX = this.x - 2;
+        const shieldY = this.y + this.height * 0.45;
 
-        // Blocking animation - shield comes forward
-        const blockOffset = this.isBlocking ? -4 : 0;
+        // Blocking animation - shield comes forward/up
+        const blockOffsetX = this.isBlocking ? 5 : 0;
+        const blockOffsetY = this.isBlocking ? -2 : 0;
 
         ctx.save();
-        ctx.translate(blockOffset, 0);
+        ctx.translate(blockOffsetX, blockOffsetY);
 
         // Shield base (metal) - kite shield shape
         ctx.fillStyle = '#7C8B9C';
         ctx.beginPath();
-        ctx.moveTo(shieldX, shieldY);
-        ctx.lineTo(shieldX + 14, shieldY + 2);
-        ctx.lineTo(shieldX + 14, shieldY + 22);
-        ctx.lineTo(shieldX + 7, shieldY + 28);
-        ctx.lineTo(shieldX, shieldY + 22);
+        ctx.moveTo(shieldX, shieldY); // Top left
+        ctx.lineTo(shieldX + 14, shieldY + 2); // Top right (slanted)
+        ctx.lineTo(shieldX + 14, shieldY + 22); // Right side
+        ctx.lineTo(shieldX + 7, shieldY + 28); // Bottom point
+        ctx.lineTo(shieldX, shieldY + 22); // Left side
         ctx.closePath();
         ctx.fill();
 

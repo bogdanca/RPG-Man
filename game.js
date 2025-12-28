@@ -30,7 +30,9 @@ class Game {
         this.dropManager = new DropManager();
         this.projectileManager = new ProjectileManager();
         this.levelGenerator = new LevelGenerator();
+        this.levelGenerator = new LevelGenerator();
         this.npcManager = new NPCManager();
+        this.recallSystem = new RecallSystem(this);
 
         // Spell effects
         this.thunderstrikeEffect = null;
@@ -506,6 +508,11 @@ class Game {
 
         // Update particles
         this.particleSystem.update(this.deltaTime);
+
+        // Update recall system
+        if (this.recallSystem) {
+            this.recallSystem.update(this.deltaTime);
+        }
 
         // Update spell cooldowns
         this.player.updateSpellCooldowns(this.deltaTime);
