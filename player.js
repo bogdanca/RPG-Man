@@ -570,13 +570,13 @@ class Player {
             this.drawSword(ctx, swordAngle, drawDirection);
         }
 
-        // Draw shield when blocking (behind player)
+        // Draw pixel art character body
+        this.drawPixelBody(ctx);
+
+        // Draw shield when blocking (in front of player)
         if (this.isBlocking) {
             this.drawShield(ctx);
         }
-
-        // Draw pixel art character body
-        this.drawPixelBody(ctx);
 
         // Draw sword in front when mid-swing
         if (this.isAttacking && swordAngle >= -60) {
