@@ -529,25 +529,10 @@ class CaveHub {
             ctx.restore();
 
             // Simple runes (no flashing) - repositioned slightly down
-            if (shrine.name === 'Crystal Depths') {
-                const currentHour = new Date().getHours();
-                if (currentHour !== 23) {
-                    ctx.fillStyle = '#ff4444'; // Red for locked
-                    ctx.font = 'bold 11px monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('Locked (23:00)', shrine.x + 25, shrine.y + 4);
-                } else {
-                    ctx.fillStyle = '#6ac5c5'; // Standard blue
-                    ctx.font = 'bold 11px monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('◊ ▲ ◊', shrine.x + 25, shrine.y + 4);
-                }
-            } else {
-                ctx.fillStyle = '#6ac5c5';
-                ctx.font = 'bold 11px monospace';
-                ctx.textAlign = 'center';
-                ctx.fillText('◊ ▲ ◊', shrine.x + 25, shrine.y + 4);
-            }
+            ctx.fillStyle = '#6ac5c5';
+            ctx.font = 'bold 11px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('◊ ▲ ◊', shrine.x + 25, shrine.y + 4);
         }
     }
 

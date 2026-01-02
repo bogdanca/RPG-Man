@@ -41,14 +41,14 @@ const SafeStorage = {
 
 function checkCollision(rect1, rect2) {
     return rect1.x < rect2.x + rect2.width &&
-           rect1.x + rect1.width > rect2.x &&
-           rect1.y < rect2.y + rect2.height &&
-           rect1.y + rect1.height > rect2.y;
+        rect1.x + rect1.width > rect2.x &&
+        rect1.y < rect2.y + rect2.height &&
+        rect1.y + rect1.height > rect2.y;
 }
 
 function checkPointInRect(x, y, rect) {
     return x >= rect.x && x <= rect.x + rect.width &&
-           y >= rect.y && y <= rect.y + rect.height;
+        y >= rect.y && y <= rect.y + rect.height;
 }
 
 function distance(x1, y1, x2, y2) {
@@ -61,6 +61,25 @@ function clamp(value, min, max) {
 
 function lerp(start, end, t) {
     return start + (end - start) * t;
+}
+
+function formatNumber(num) {
+    if (num < 100000) return num.toLocaleString();
+
+    const lookup = [
+        { value: 1e12, symbol: "T" },
+        { value: 1e9, symbol: "B" },
+        { value: 1e6, symbol: "M" },
+        { value: 1e3, symbol: "K" }
+    ];
+
+    for (let item of lookup) {
+        if (num >= item.value) {
+            // Use up to 1 decimal place, remove if .0
+            return (num / item.value).toFixed(1).replace(/\.0$/, '') + item.symbol;
+        }
+    }
+    return num.toLocaleString();
 }
 
 class SaveManager {

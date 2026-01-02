@@ -321,7 +321,8 @@
             <!-- Death Screen -->
             <div id="death-screen" class="death-screen hidden">
                 <div class="death-message">YOU DIED</div>
-                <div class="death-penalty">You lose 20% Gold and Experience</div>
+                <div class="death-penalty">You lose 20% Gold, Materials and Experience. <br> You lose all inventory and
+                    equipped items.</div>
                 <button id="try-again-btn" class="try-again-btn">Try Again</button>
             </div>
 
@@ -404,7 +405,19 @@
                     </div>
 
                     <div class="debug-section">
-                        <h3>🔄 Game State</h3>
+                        <h3>� Player Level</h3>
+                        <div class="level-control-group"
+                            style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                            <input type="range" id="debug-level-slider" min="1" max="99" value="1" style="flex: 1;">
+                            <input type="number" id="debug-level-input" min="1" max="99" value="1"
+                                style="width: 50px; padding: 5px; background: #333; color: white; border: 1px solid #555; border-radius: 4px;">
+                            <button id="set-level-btn" class="debug-action-btn"
+                                style="width: auto; padding: 5px 10px;">Set</button>
+                        </div>
+                    </div>
+
+                    <div class="debug-section">
+                        <h3>�🔄 Game State</h3>
                         <button id="kill-player-btn" class="debug-action-btn danger-btn">
                             <span class="btn-icon">☠️</span>
                             <span class="btn-label">Kill Player Character</span>

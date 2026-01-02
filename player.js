@@ -404,24 +404,65 @@ class Player {
             return;
         }
 
-        // Lose 20% of current XP
-        let lostXP = Math.floor(this.xp * 0.2);
-        this.xp -= lostXP;
-        if (this.xp < 0) this.xp = 0;
+        // Lose inventory using Hardcore settings but only 20% of resources
 
-        // Lose 20% of current coins
+        // Reset gear to basics
+        this.gear = { weapon: 0, armor: 0, trinket: 0, boots: 0 };
+
+        // Reset potions
+        this.potions = {
+            health_potion: 0,
+            elixir_strength: 0,
+            elixir_defense: 0,
+            elixir_speed: 0
+        };
+
+        // Lose 20% of resources (Coins, Materials, XP)
         let lostCoins = Math.floor(this.coins * 0.2);
         this.coins -= lostCoins;
+
+        let lostMaterials = Math.floor(this.materials * 0.2);
+        this.materials -= lostMaterials;
+
+        let lostXP = Math.floor(this.xp * 0.2);
+        this.xp -= lostXP;
+        // Ensure non-negative
         if (this.coins < 0) this.coins = 0;
+        if (this.materials < 0) this.materials = 0;
+        if (this.xp < 0) this.xp = 0;
 
         if (window.gameUI) {
             window.gameUI.hideDeathScreen();
-            let losses = [];
-            if (lostXP > 0) losses.push(`${lostXP} XP`);
-            if (lostCoins > 0) losses.push(`${lostCoins} coins`);
-            if (losses.length > 0) {
-                window.gameUI.showNotification(`Lost ${losses.join(' and ')}`, 'damage');
-            }
+
+            // Clear inventory slots
+            window.gameUI.inventorySlots = new Array(16).fill(null);
+            window.gameUI.newItemSlots = new Set();
+            window.gameUI.hasNewItems = false;
+
+            // Clear potion belt
+            window.gameUI.potionBeltSlots = [null, null, null, null];
+
+            // Update UI
+            window.gameUI.renderInventory();
+            window.gameUI.renderPotionBelt();
+            window.gameUI.updateActivePotionsDisplay();
+            window.gameUI.updateCharacterPanel(); // Update gear slots
+
+            window.gameUI.showNotification(`Lost inventory, ${lostCoins} coins, ${lostMaterials} materials, and ${lostXP} XP`, 'damage');
+        }
+
+        // Recalculate stats based on wiped gear
+        this.recalculateStats();
+
+        // Respawn in Hub
+        if (window.game) {
+            window.game.loadZone('hub');
+            // Force safe spawn in hub
+            this.x = 100;
+            this.y = 400;
+            this.vx = 0;
+            this.vy = 0;
+            window.game.saveGame();
         }
     }
 
@@ -433,13 +474,19 @@ class Player {
             window.gameUI.showXPGain(this.x + this.width / 2, this.y, amount);
         }
 
-        let requiredXP = XP_FORMULA(this.level);
-        if (this.xp >= requiredXP) {
-            this.levelUp();
+        // Check for level up if not at max level
+        if (this.level < 99) {
+            let requiredXP = XP_FORMULA(this.level);
+            if (this.xp >= requiredXP) {
+                this.levelUp();
+            }
         }
     }
 
     levelUp() {
+        // Enforce level cap
+        if (this.level >= 99) return;
+
         this.xp -= XP_FORMULA(this.level);
         this.level++;
 
@@ -463,8 +510,8 @@ class Player {
             window.gameUI.showNotification(`🎉 Level Up! Now Level ${this.level}`, 'level-up');
         }
 
-        // Check for more level ups
-        if (this.xp >= XP_FORMULA(this.level)) {
+        // Check for more level ups if still under cap
+        if (this.level < 99 && this.xp >= XP_FORMULA(this.level)) {
             this.levelUp();
         }
     }
