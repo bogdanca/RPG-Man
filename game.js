@@ -214,6 +214,9 @@ class Game {
         // Set up slime cave background for dungeon
         if (zone.type === 'dungeon') {
             let slimeCave = getSlimeCaveInstance();
+            if (slimeCave.setDungeonType) {
+                slimeCave.setDungeonType(zone.dungeon);
+            }
             slimeCave.setFloor(zone.floor || 1);
         }
 
@@ -357,6 +360,10 @@ class Game {
     }
 
     getNextZone(currentZone) {
+        if (currentZone.nextZoneId) {
+            return currentZone.nextZoneId;
+        }
+
         if (currentZone.exitToHub) {
             return 'hub';
         }
@@ -372,8 +379,14 @@ class Game {
     }
 
     getDungeonEntrance(dungeonName) {
-        let entrance = ZONES.find(z => z.dungeon === dungeonName && z.floor === 1);
-        return entrance ? entrance.id : 'hub';
+        // Find all zones for this dungeon
+        let dungeonZones = ZONES.filter(z => z.dungeon === dungeonName);
+
+        // Sort by floor number ascending
+        dungeonZones.sort((a, b) => (a.floor || 0) - (b.floor || 0));
+
+        // Return the first one (lowest floor) or hub if none found
+        return dungeonZones.length > 0 ? dungeonZones[0].id : 'hub';
     }
 
     onEnemyKilled(xpGained) {
@@ -437,9 +450,9 @@ class Game {
         this.ui.processingAction = true;
 
         let gearData = GEAR_SLOTS[slot];
-        // Use craftedGear instead of equipped gear for progression
-        let currentCraftedLevel = this.player.craftedGear[slot];
-        let nextLevel = currentCraftedLevel + 1;
+        // Use equipped gear for base level (allows regrinding after death)
+        let currentLevel = this.player.gear[slot] || 0;
+        let nextLevel = currentLevel + 1;
 
         if (nextLevel >= gearData.levels.length) {
             this.ui.showNotification('Already at max level!', 'damage');
@@ -457,8 +470,10 @@ class Game {
             const added = this.ui.addItemToInventory(slot, nextLevel, true);
 
             if (added) {
-                // Update crafted gear tracker
-                this.player.craftedGear[slot] = nextLevel;
+                // Update crafted gear tracker only if we've reached a new tier
+                if (nextLevel > (this.player.craftedGear[slot] || 0)) {
+                    this.player.craftedGear[slot] = nextLevel;
+                }
 
                 // Show flying animation to bag
                 this.ui.showCraftedItemAnimation(nextGear.name);
@@ -612,6 +627,9 @@ class Game {
         // Draw slime cave decorations (if in dungeon)
         if (zone.type === 'dungeon') {
             let slimeCave = getSlimeCaveInstance();
+            if (slimeCave.setDungeonType) {
+                slimeCave.setDungeonType(zone.dungeon);
+            }
             slimeCave.setFloor(zone.floor || 1);
             slimeCave.draw(this.ctx);
         }
@@ -620,7 +638,7 @@ class Game {
         if (zone.type === 'dungeon') {
             // Draw mossy slab platforms for dungeon
             for (let platform of this.platforms) {
-                this.drawMossyPlatform(this.ctx, platform, zone.floor || 1);
+                this.drawMossyPlatform(this.ctx, platform, zone.floor || 1, zone.dungeon);
             }
         } else {
             // Regular platforms for hub
@@ -691,14 +709,24 @@ class Game {
         // this.ctx.textAlign = 'left';
     }
 
-    drawMossyPlatform(ctx, platform, floor) {
+    drawMossyPlatform(ctx, platform, floor, dungeonType) {
         // Color schemes for each floor
-        const floorColors = {
-            1: { base: '#3a5a3a', dark: '#2a4a2a', moss: '#4a8a4a', highlight: '#5a9a5a' },  // Green
-            2: { base: '#3a4a5a', dark: '#2a3a4a', moss: '#4a7a9a', highlight: '#5a8aaa' },  // Blue
-            3: { base: '#5a3a3a', dark: '#4a2a2a', moss: '#8a4a4a', highlight: '#9a5a5a' },  // Red
-            4: { base: '#4a3a5a', dark: '#3a2a4a', moss: '#7a4a8a', highlight: '#8a5a9a' }   // Purple
-        };
+        let floorColors;
+        if (dungeonType === 'slime_caves_ii') {
+            floorColors = {
+                1: { base: '#3a3a1a', dark: '#2a2a0a', moss: '#aaaa2a', highlight: '#ffff5a' },  // Electric
+                2: { base: '#1a3a1a', dark: '#0a2a0a', moss: '#2aff2a', highlight: '#5aff5a' },  // Radioactive
+                3: { base: '#4a4a4a', dark: '#2a2a2a', moss: '#c0c0c0', highlight: '#ffffff' },  // Metal
+                4: { base: '#2a0a3a', dark: '#1a0a2a', moss: '#4a0080', highlight: '#8a2be2' }   // Void
+            };
+        } else {
+            floorColors = {
+                1: { base: '#3a5a3a', dark: '#2a4a2a', moss: '#4a8a4a', highlight: '#5a9a5a' },  // Green
+                2: { base: '#3a4a5a', dark: '#2a3a4a', moss: '#4a7a9a', highlight: '#5a8aaa' },  // Blue
+                3: { base: '#5a3a3a', dark: '#4a2a2a', moss: '#8a4a4a', highlight: '#9a5a5a' },  // Red
+                4: { base: '#4a3a5a', dark: '#3a2a4a', moss: '#7a4a8a', highlight: '#8a5a9a' }   // Purple
+            };
+        }
 
         const colors = floorColors[floor] || floorColors[1];
 

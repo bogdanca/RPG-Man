@@ -404,8 +404,8 @@ class GameUI {
 
         for (let slot in GEAR_SLOTS) {
             let gearData = GEAR_SLOTS[slot];
-            // Use craftedGear to show next tier available after crafting
-            let currentLevel = player.craftedGear[slot] || 0;
+            // Use equipped gear to show next tier (allows repurchasing lost gear)
+            let currentLevel = player.gear[slot] || 0;
             let nextLevel = currentLevel + 1;
 
             if (nextLevel < gearData.levels.length) {

@@ -161,6 +161,88 @@ const ENEMY_TYPES = {
         breathCooldown: 5000,     // Ghostly breath attack
         breathDamage: 60,
         phaseShiftCooldown: 8000  // Teleport ability
+    },
+    // Slime Caves II Enemies
+    electric_slime: {
+        name: 'Electric Slime',
+        width: 32,
+        height: 32,
+        hp: 200,
+        speed: 1.2,
+        damage: 25,
+        damageMax: 35,
+        xp: 800,
+        coins: 15,
+        materialDropChance: 0.7,
+        color: '#ffff00',
+        behavior: 'slime_jump',
+        jumpInterval: 1200,
+        jumpPower: -10
+    },
+    radioactive_slime: {
+        name: 'Toxic Slime',
+        width: 34,
+        height: 34,
+        hp: 350,
+        speed: 0.9,
+        damage: 35,
+        damageMax: 45,
+        xp: 1200,
+        coins: 25,
+        materialDropChance: 0.75,
+        color: '#2aff2a',
+        behavior: 'slime_shooter',
+        shootCooldown: 2000,
+        projectileDamage: 30,
+        projectileColor: '#5aff5a'
+    },
+    metal_slime: {
+        name: 'Metal Slime',
+        width: 30,
+        height: 30,
+        hp: 600, // High HP/Defense equivalent
+        speed: 0.5,
+        damage: 45,
+        damageMax: 55,
+        xp: 2000,
+        coins: 50,
+        materialDropChance: 0.9,
+        color: '#c0c0c0',
+        behavior: 'slime_jump'
+    },
+    void_slime: {
+        name: 'Void Slime',
+        width: 36,
+        height: 36,
+        hp: 800,
+        speed: 1.5,
+        damage: 60,
+        damageMax: 80,
+        xp: 3500,
+        coins: 80,
+        materialDropChance: 0.8,
+        color: '#4a0080',
+        behavior: 'slime_boss' // Aggressive
+    },
+    slime_emperor: {
+        name: 'Slime Emperor',
+        width: 80,
+        height: 80,
+        hp: 6000,
+        damage: 80,
+        damageMax: 120,
+        speed: 1.8,
+        xp: 15000,
+        coins: 2000,
+        materials: 100,
+        color: '#FFD700',
+        behavior: 'slime_boss',
+        jumpInterval: 1200,
+        jumpPower: -15,
+        shootCooldown: 1500,
+        projectileDamage: 60,
+        projectileSpeed: 6,
+        projectileColor: '#8a2be2'
     }
 };
 
@@ -184,7 +266,7 @@ const ZONES = [
     // Slime Caves Dungeon - Level 1 (Levels 1-4)
     {
         id: 'slime_caves_1',
-        name: 'Level 1',
+        name: 'SC I - Floor 1',
         dungeon: 'slime_caves',
         floor: 1,
         requiredLevel: 1,
@@ -202,10 +284,10 @@ const ZONES = [
     // Slime Caves Dungeon - Level 2 (Levels 4-7)
     {
         id: 'slime_caves_2',
-        name: 'Level 2',
+        name: 'SC I - Floor 2',
         dungeon: 'slime_caves',
         floor: 2,
-        requiredLevel: 4,
+        requiredLevel: 5,
         type: 'dungeon',
         procedural: true,
         backgroundColor: '#0d1f0d',
@@ -221,10 +303,10 @@ const ZONES = [
     // Slime Caves Dungeon - Level 3 (Levels 7-12)
     {
         id: 'slime_caves_3',
-        name: 'Level 3',
+        name: 'SC I - Floor 3',
         dungeon: 'slime_caves',
         floor: 3,
-        requiredLevel: 7,
+        requiredLevel: 10,
         type: 'dungeon',
         procedural: true,
         backgroundColor: '#1a0a0a',
@@ -237,13 +319,36 @@ const ZONES = [
         xpRequired: 8200
     },
 
+    // Slime Caves Dungeon - Floor 4 (Levels 15-20)
+    {
+        id: 'slime_caves_4',
+        name: 'SC I - Floor 4',
+        dungeon: 'slime_caves',
+        floor: 4,
+        requiredLevel: 15,
+        type: 'dungeon',
+        procedural: true,
+        backgroundColor: '#2a0a2a', // Purple-ish
+        platformColor: '#4a2a4a',
+        enemyTypes: [
+            { type: 'red_slime', weight: 0.7 },
+            { type: 'cave_bat_strong', weight: 0.3 }
+        ],
+        enemyCount: { min: 8, max: 12 },
+        xpRequired: 12000
+    },
+
     // Slime Caves Dungeon - Boss (Level 12)
     {
         id: 'slime_caves_boss',
-        name: 'Level 4',
+        name: 'SC I - Boss',
         dungeon: 'slime_caves',
-        floor: 4,
-        requiredLevel: 12,
+        floor: 4, // Keeping original floor count for compatibility but user asked for 4 floors + boss. 
+        // Wait, user said "Floor 4 (existing) - Levels 15-20" then "Boss 20+".
+        // Existing data had boss at floor 4 (Level 4).
+        // I will shift boss to Floor 5 to match "Floors 1-4... and boss at the end".
+        floor: 5,
+        requiredLevel: 20,
         type: 'dungeon',
         isBoss: true,
         procedural: false,
@@ -260,6 +365,106 @@ const ZONES = [
             { x: 325, y: 350, width: 150, height: 20 }
         ],
         xpRequired: 2000,
+        // exitToHub: true, // Replaced with direct link
+        nextZoneId: 'slime_caves_ii_1'
+    },
+
+    // --- SLIME CAVES II ---
+
+    // Slime Caves II - Floor 1 (Levels 20-25)
+    {
+        id: 'slime_caves_ii_1',
+        name: 'SC II - Floor 1',
+        dungeon: 'slime_caves_ii',
+        floor: 1,
+        requiredLevel: 20,
+        type: 'dungeon',
+        procedural: true,
+        backgroundColor: '#2a2a0a',
+        platformColor: '#3a3a1a',
+        enemyTypes: [
+            { type: 'electric_slime', weight: 1.0 }
+        ],
+        enemyCount: { min: 6, max: 10 },
+        xpRequired: 5000
+    },
+
+    // Slime Caves II - Floor 2 (Levels 25-30)
+    {
+        id: 'slime_caves_ii_2',
+        name: 'SC II - Floor 2',
+        dungeon: 'slime_caves_ii',
+        floor: 2,
+        requiredLevel: 25,
+        type: 'dungeon',
+        procedural: true,
+        backgroundColor: '#0a2a0a',
+        platformColor: '#1a3a1a', // Radioactive
+        enemyTypes: [
+            { type: 'radioactive_slime', weight: 1.0 }
+        ],
+        enemyCount: { min: 6, max: 10 },
+        xpRequired: 7500
+    },
+
+    // Slime Caves II - Floor 3 (Levels 30-35)
+    {
+        id: 'slime_caves_ii_3',
+        name: 'SC II - Floor 3',
+        dungeon: 'slime_caves_ii',
+        floor: 3,
+        requiredLevel: 30,
+        type: 'dungeon',
+        procedural: true,
+        backgroundColor: '#2a2a2a',
+        platformColor: '#4a4a4a', // Metal
+        enemyTypes: [
+            { type: 'metal_slime', weight: 1.0 }
+        ],
+        enemyCount: { min: 6, max: 10 },
+        xpRequired: 10000
+    },
+
+    // Slime Caves II - Floor 4 (Levels 35-40)
+    {
+        id: 'slime_caves_ii_4',
+        name: 'SC II - Floor 4',
+        dungeon: 'slime_caves_ii',
+        floor: 4,
+        requiredLevel: 35,
+        type: 'dungeon',
+        procedural: true,
+        backgroundColor: '#050510',
+        platformColor: '#2a0a3a', // Void
+        enemyTypes: [
+            { type: 'void_slime', weight: 1.0 }
+        ],
+        enemyCount: { min: 6, max: 10 },
+        xpRequired: 15000
+    },
+
+    // Slime Caves II - Boss (Level 40+)
+    {
+        id: 'slime_caves_ii_boss',
+        name: 'SC II - Emperor',
+        dungeon: 'slime_caves_ii',
+        floor: 5,
+        requiredLevel: 40,
+        type: 'dungeon',
+        isBoss: true,
+        procedural: false,
+        backgroundColor: '#100505',
+        platformColor: '#FFD700',
+        enemyTypes: [
+            { type: 'slime_emperor', weight: 1.0 }
+        ],
+        enemyCount: { min: 1, max: 1 },
+        platforms: [
+            { x: 0, y: 550, width: 800, height: 50 },
+            { x: 150, y: 450, width: 500, height: 20 },
+            { x: 300, y: 350, width: 200, height: 20 }
+        ],
+        xpRequired: 20000,
         exitToHub: true
     },
 
