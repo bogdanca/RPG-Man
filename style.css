@@ -587,6 +587,52 @@ body {
     }
 }
 
+#hp-loss-indicator {
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    transform: translateX(-50%);
+    font-size: 16px;
+    font-weight: bold;
+    color: #e74c3c;
+    text-shadow:
+        -1px -1px 0 #000,
+        1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px 1px 0 #000,
+        0 0 10px #e74c3c;
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 100;
+}
+
+#hp-loss-indicator.show {
+    animation: hpLossAnim 1s ease-out;
+}
+
+@keyframes hpLossAnim {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px) scale(0.8);
+    }
+
+    20% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(5px) scale(1.2);
+    }
+
+    80% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(15px) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(35px) scale(0.6);
+    }
+}
+
 #stats-display {
     display: flex;
     gap: 8px;

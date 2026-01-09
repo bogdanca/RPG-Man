@@ -15,6 +15,7 @@ class GameUI {
         this.materialsText = document.getElementById('materials-text');
 
         this.damageNumbersContainer = document.getElementById('damage-numbers');
+        this.hpLossIndicator = document.getElementById('hp-loss-indicator');
         this.notificationsContainer = document.getElementById('notifications');
 
         // Tooltip
@@ -404,58 +405,73 @@ class GameUI {
 
         for (let slot in GEAR_SLOTS) {
             let gearData = GEAR_SLOTS[slot];
-            // Use equipped gear to show next tier (allows repurchasing lost gear)
-            let currentLevel = player.gear[slot] || 0;
-            let nextLevel = currentLevel + 1;
+            // Use highest of equipped OR inventory gear
 
-            if (nextLevel < gearData.levels.length) {
-                let nextGear = gearData.levels[nextLevel];
+            // Show multiple options:
+            // 1. Any tier we have already unlocked (<= player.craftedGear[slot])
+            // 2. The immediate next tier (maxUnlocked + 1)
 
-                // Skip level 0 items (they're just placeholders)
-                if (nextLevel === 0) {
-                    continue;
-                }
+            let maxUnlocked = (player.craftedGear[slot] || 0);
+            let showUpTo = Math.min(maxUnlocked + 1, gearData.levels.length - 1);
+
+            // If we have nothing unlocked, showUpTo will be 1 (Leather/Copper)
+            // If we have Diamond (4) unlocked, showUpTo will be 5 (Void) if it exists, or 4.
+
+            // Wrapper for this slot
+            let slotWrapper = document.createElement('div');
+            slotWrapper.className = 'slot-upgrade-group';
+            slotWrapper.style.marginBottom = '15px';
+            slotWrapper.style.border = '1px solid #444';
+            slotWrapper.style.padding = '10px';
+            slotWrapper.style.borderRadius = '5px';
+            slotWrapper.style.backgroundColor = 'rgba(0,0,0,0.3)';
+
+            slotWrapper.innerHTML = `<div style="margin-bottom:5px; color:#aaa; font-size:0.9em;">${gearData.name} Upgrades</div>`;
+
+            // Iterate from Level 1 up to showUpTo
+            for (let lvl = 1; lvl <= showUpTo; lvl++) {
+                let targetGear = gearData.levels[lvl];
+
+                // Skip if null
+                if (!targetGear) continue;
 
                 let div = document.createElement('div');
                 div.className = 'upgrade-item';
+                div.style.marginBottom = '5px';
 
-                let bonusText = this.getGearBonusText(nextGear);
-
-                // Generate icon with error handling
+                let bonusText = this.getGearBonusText(targetGear);
                 let iconDataUrl = '';
                 try {
-                    iconDataUrl = ItemIconGenerator.generateIcon(slot, nextLevel);
-                } catch (e) {
-                    console.error('Error generating icon:', e);
-                    iconDataUrl = '';
-                }
+                    iconDataUrl = ItemIconGenerator.generateIcon(slot, lvl);
+                } catch (e) { iconDataUrl = ''; }
+
+                // Check if player can afford
+                let canAfford = player.coins >= targetGear.coins && player.materials >= targetGear.materials;
+                let affordClass = canAfford ? '' : 'disabled';
+                let affordStyle = canAfford ? '' : 'opacity: 0.5; cursor: not-allowed;';
+
+                // Check if we already HAVE this item in inventory/equipped to visual cue?
+                // Optional polish.
 
                 div.innerHTML = `
-                    <div class="upgrade-item-header">
-                        ${iconDataUrl ? `<img src="${iconDataUrl}" class="upgrade-item-icon" style="width: 32px; height: 32px; image-rendering: pixelated;">` : ''}
-                        <div>
-                            <div><strong>${gearData.name}</strong></div>
-                            <div>${nextGear.name}</div>
+                        <div class="upgrade-item-header">
+                            ${iconDataUrl ? `<img src="${iconDataUrl}" class="upgrade-item-icon" style="width: 24px; height: 24px; image-rendering: pixelated;">` : ''}
+                            <div style="flex:1;">
+                                <div style="font-size:0.9em;"><strong>${targetGear.name}</strong></div>
+                                <div style="font-size:0.8em; color:#ccc;">${bonusText}</div>
+                            </div>
+                            <button class="btn btn-small ${affordClass}" style="${affordStyle} margin-left:10px;" onclick="window.game.upgradePlayerGear('${slot}', ${lvl})">
+                                Buy (${targetGear.coins}💰 ${targetGear.materials}🔧)
+                            </button>
                         </div>
-                    </div>
-                    <div>${bonusText}</div>
-                    <button class="btn btn-small" onclick="window.game.upgradePlayerGear('${slot}')">
-                        Craft (${nextGear.coins} 💰, ${nextGear.materials} 🔧)
-                    </button>
-                `;
-
-                this.gearUpgradesContainer.appendChild(div);
-            } else {
-                let div = document.createElement('div');
-                div.className = 'upgrade-item';
-                div.innerHTML = `
-                    <div><strong>${gearData.name}</strong></div>
-                    <div>✨ Max Level ✨</div>
-                `;
-                this.gearUpgradesContainer.appendChild(div);
+                    `;
+                slotWrapper.appendChild(div);
             }
+
+            this.gearUpgradesContainer.appendChild(slotWrapper);
         }
     }
+
 
     getGearBonusText(gear) {
         let bonuses = [];
@@ -1147,6 +1163,16 @@ class GameUI {
             div.remove();
         }, 1000);
     }
+
+    showPlayerDamage(amount) {
+        if (!this.hpLossIndicator) return;
+
+        this.hpLossIndicator.textContent = `-${amount}`;
+        this.hpLossIndicator.classList.remove('show');
+        void this.hpLossIndicator.offsetWidth; // Trigger reflow
+        this.hpLossIndicator.classList.add('show');
+    }
+
     showNotification(message, type = '') {
         let div = document.createElement('div');
         div.className = 'notification ' + type;

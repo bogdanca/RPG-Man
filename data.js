@@ -134,7 +134,8 @@ const ENEMY_TYPES = {
         shootCooldown: 2000,
         projectileDamage: 30,
         projectileSpeed: 4,
-        projectileColor: '#1abc9c'
+        projectileColor: '#1abc9c',
+        isBoss: true
     },
 
     // Deep Mines Boss - Phantom Dragon (Time-gated)
@@ -160,7 +161,8 @@ const ENEMY_TYPES = {
         visibleDuration: 4000,    // How long it stays visible
         breathCooldown: 5000,     // Ghostly breath attack
         breathDamage: 60,
-        phaseShiftCooldown: 8000  // Teleport ability
+        phaseShiftCooldown: 8000,  // Teleport ability
+        isBoss: true
     },
     // Slime Caves II Enemies
     electric_slime: {
@@ -242,7 +244,8 @@ const ENEMY_TYPES = {
         shootCooldown: 1500,
         projectileDamage: 60,
         projectileSpeed: 6,
-        projectileColor: '#8a2be2'
+        projectileColor: '#8a2be2',
+        isBoss: true
     }
 };
 
@@ -257,7 +260,7 @@ const ZONES = [
         platformColor: '#4a3a2a',
         procedural: false,
         portals: [
-            { x: 145, y: 340, label: 'Deep Mines', targetDungeon: 'deep_mines', locked: false, isTimeGated: true, openHour: 23 },
+            { x: 145, y: 340, label: 'Deep Mines', targetDungeon: 'deep_mines', locked: false, isTimeGated: true, openHour: 23, closeHour: 12 },
             { x: 370, y: 300, label: 'Slime Caves', targetDungeon: 'slime_caves', locked: false },
             { x: 595, y: 340, label: 'Crystal Depths', targetDungeon: 'slime_caves', locked: true }
         ]
@@ -548,10 +551,10 @@ const GEAR_SLOTS = {
         name: 'Armor',
         levels: [
             { name: 'No Armor', coins: 0, materials: 0, defense: 0, hp: 0 },
-            { name: 'Leather Armor', coins: 15, materials: 5, defense: 4, hp: 15 },
-            { name: 'Copper Armor', coins: 40, materials: 12, defense: 8, hp: 30 },
-            { name: 'Iron Armor', coins: 80, materials: 25, defense: 12, hp: 45 },
-            { name: 'Diamond Armor', coins: 150, materials: 50, defense: 18, hp: 50 }
+            { name: 'Leather Armor', coins: 15, materials: 5, defense: 2, hp: 15 },
+            { name: 'Copper Armor', coins: 40, materials: 12, defense: 4, hp: 30 },
+            { name: 'Iron Armor', coins: 80, materials: 25, defense: 7, hp: 45 },
+            { name: 'Diamond Armor', coins: 150, materials: 50, defense: 10, hp: 50 }
         ]
     },
     trinket: {
@@ -568,10 +571,10 @@ const GEAR_SLOTS = {
         name: 'Boots',
         levels: [
             { name: 'Bare Feet', coins: 0, materials: 0, speed: 0, defense: 0 },
-            { name: 'Leather Boots', coins: 18, materials: 4, speed: 0.12, defense: 2 },
-            { name: 'Copper Boots', coins: 42, materials: 10, speed: 0.24, defense: 4 },
-            { name: 'Iron Boots', coins: 75, materials: 20, speed: 0.36, defense: 6 },
-            { name: 'Diamond Boots', coins: 150, materials: 45, speed: 0.48, defense: 8 }
+            { name: 'Leather Boots', coins: 18, materials: 4, speed: 0.12, defense: 1 },
+            { name: 'Copper Boots', coins: 42, materials: 10, speed: 0.24, defense: 2 },
+            { name: 'Iron Boots', coins: 75, materials: 20, speed: 0.36, defense: 3 },
+            { name: 'Diamond Boots', coins: 150, materials: 45, speed: 0.48, defense: 4 }
         ]
     }
 };

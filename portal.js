@@ -287,7 +287,7 @@ class LevelPortal {
 
 // Hub Portal System (for the main hub portals to dungeons)
 class Portal {
-    constructor(x, y, label = 'Portal', locked = false, isTimeGated = false, openHour = 11) {
+    constructor(x, y, label = 'Portal', locked = false, isTimeGated = false, openHour = 11, closeHour = null) {
         this.x = x;
         this.y = y;
         this.width = 60;
@@ -298,6 +298,7 @@ class Portal {
         // Time-gating
         this.isTimeGated = isTimeGated;
         this.openHour = openHour;
+        this.closeHour = closeHour;
         this.isTimeOpen = false;
         this.failedToday = false; // Track if player failed today
 
@@ -337,8 +338,19 @@ class Portal {
             this.failedToday = false;
         }
 
-        // Portal opens at the specified hour and stays open for 1 hour
-        this.isTimeOpen = (currentHour === this.openHour);
+        // Portal opens at the specified hour and stays open for 1 hour or until closeHour
+        if (this.closeHour !== null) {
+            if (this.openHour > this.closeHour) {
+                // Window crosses midnight (e.g. 23 to 12)
+                this.isTimeOpen = (currentHour >= this.openHour || currentHour < this.closeHour);
+            } else {
+                // Standard window (e.g. 9 to 17)
+                this.isTimeOpen = (currentHour >= this.openHour && currentHour < this.closeHour);
+            }
+        } else {
+            // Default: Open for 1 hour
+            this.isTimeOpen = (currentHour === this.openHour);
+        }
     }
 
     markFailed() {
@@ -362,6 +374,11 @@ class Portal {
         }
 
         if (this.isTimeOpen) {
+            // Show when it closes if we have a close hour
+            if (this.closeHour !== null) {
+                return `Open until ${this.closeHour}:00`;
+            }
+
             const minutesLeft = 60 - currentMinute;
             return `Open! ${minutesLeft}m remaining`;
         }

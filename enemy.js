@@ -595,8 +595,7 @@ class Enemy {
         }
 
         // Respawn after delay (but not bosses)
-        const isBoss = this.type === 'slime_king' || this.type === 'phantom_dragon';
-        if (!isBoss) {
+        if (!this.config.isBoss) {
             setTimeout(() => {
                 this.respawn();
             }, 5000);

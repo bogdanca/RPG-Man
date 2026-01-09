@@ -356,7 +356,7 @@ class Player {
 
         // Show damage
         if (window.gameUI) {
-            window.gameUI.showDamage(this.x + this.width / 2, this.y, actualDamage, false);
+            window.gameUI.showPlayerDamage(actualDamage);
         }
 
         if (this.hp <= 0) {

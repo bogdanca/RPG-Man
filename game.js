@@ -327,7 +327,8 @@ class Game {
                     portalData.label,
                     portalData.locked,
                     portalData.isTimeGated || false,
-                    portalData.openHour || 11
+                    portalData.openHour || 11,
+                    portalData.closeHour || null
                 );
                 portal.targetZone = this.getDungeonEntrance(portalData.targetDungeon);
                 this.portals.push(portal);
@@ -436,10 +437,26 @@ class Game {
             setTimeout(() => {
                 this.ui.processingAction = false;
             }, 100);
-        } else {
-            this.ui.processingAction = false;
             this.ui.showNotification('Not enough coins!', 'damage');
         }
+    }
+
+    getHighestTier(slot) {
+        // Base from equipped gear
+        let highest = this.player.gear[slot] || 0;
+
+        // Check inventory if UI is accessible
+        if (this.ui && this.ui.inventorySlots) {
+            for (let item of this.ui.inventorySlots) {
+                if (item && item.slot === slot) {
+                    if (item.level > highest) {
+                        highest = item.level;
+                    }
+                }
+            }
+        }
+
+        return highest;
     }
 
     upgradePlayerGear(slot) {
@@ -450,8 +467,8 @@ class Game {
         this.ui.processingAction = true;
 
         let gearData = GEAR_SLOTS[slot];
-        // Use equipped gear for base level (allows regrinding after death)
-        let currentLevel = this.player.gear[slot] || 0;
+        // Use highest of equipped OR inventory gear for base level
+        let currentLevel = this.getHighestTier(slot);
         let nextLevel = currentLevel + 1;
 
         if (nextLevel >= gearData.levels.length) {
